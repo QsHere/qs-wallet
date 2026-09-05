@@ -2,8 +2,13 @@ const CACHE_NAME = "qs-wallet-v1";
 const SHELL_FILES = [
   "./",
   "./index.html",
+  "./settings.html",
+  "./analytics.html",
   "./style.css",
   "./app.js",
+  "./settings.js",
+  "./analytics.js",
+  "./db.js",
   "./config.js",
   "./manifest.json",
   "./icon-192.png",

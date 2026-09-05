@@ -25,12 +25,36 @@ body {
 
 .topbar {
   padding: 20px 24px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .wordmark {
   font-size: 15px;
   letter-spacing: 0.02em;
   color: var(--paper-dim);
+}
+
+.topnav {
+  display: flex;
+  gap: 14px;
+}
+
+.topnav a, .nav-back {
+  color: var(--paper-dim);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.topnav a:active, .nav-back:active {
+  color: var(--gold);
+}
+
+.topnav-spacer {
+  width: 40px;
 }
 
 .dashboard {
@@ -261,4 +285,159 @@ body {
   padding: 12px;
   font-size: 15px;
   margin-bottom: 16px;
+}
+
+/* ---------- Settings (categories) page ---------- */
+.settings-page {
+  padding: 12px 24px 40px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.add-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+
+.small-input {
+  font-size: 17px;
+  padding: 6px 0;
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.small-btn {
+  width: auto;
+  padding: 10px 18px;
+  margin-top: 0;
+  border-radius: 10px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.category-tree, .category-tree ul.tree-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.category-tree ul.tree-children {
+  padding-left: 18px;
+  border-left: 1px solid var(--divider);
+  margin: 6px 0 6px 6px;
+}
+
+.tree-item {
+  margin-bottom: 10px;
+}
+
+.tree-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tree-name {
+  font-size: 15px;
+}
+
+.tree-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.tree-btn {
+  background: none;
+  border: none;
+  color: var(--paper-dim);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.tree-btn.danger {
+  color: var(--brick);
+}
+
+.inline-add {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 4px;
+  align-items: flex-end;
+}
+
+/* ---------- Analytics page ---------- */
+.analytics-page {
+  padding: 16px 24px 40px;
+  max-width: 480px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.period-toggle {
+  display: inline-flex;
+  border: 1px solid var(--divider);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: var(--paper-dim);
+  font-size: 13px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.toggle-btn.active {
+  background: var(--surface);
+  color: var(--gold);
+}
+
+.chart-wrap {
+  max-width: 280px;
+  margin: 0 auto 28px;
+}
+
+.legend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.legend-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid var(--divider);
+  font-size: 14px;
+}
+
+.legend-list li:last-child {
+  border-bottom: 1px solid var(--divider);
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.legend-amt {
+  color: var(--paper-dim);
+}
+
+.empty-note {
+  color: var(--paper-dim);
+  font-size: 14px;
+  text-align: center;
+  padding: 12px 0;
 }

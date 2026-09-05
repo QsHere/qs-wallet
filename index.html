@@ -16,20 +16,20 @@
 
   <header class="topbar">
     <span class="wordmark">QS Wallet</span>
+    <nav class="topnav">
+      <a href="analytics.html" title="Spending breakdown">Analytics</a>
+      <a href="settings.html" title="Manage categories">Categories</a>
+    </nav>
   </header>
 
   <main class="dashboard">
     <section class="hero">
-      <p class="hero-label" id="weekLabel">Week — of —</p>
-      <p class="hero-number" id="weeklyRemaining">RM —</p>
-      <p class="hero-caption">left to spend this week</p>
+      <p class="hero-label">Available to spend</p>
+      <p class="hero-number" id="availableAmount">RM —</p>
+      <p class="hero-caption" id="todayDate">—</p>
     </section>
 
     <div class="divider"></div>
-
-    <section class="secondary-line">
-      <span id="monthlyLine">This month: RM —</span>
-    </section>
 
     <section class="balances" id="balances">
       <!-- filled by app.js -->
@@ -64,8 +64,21 @@
       <div class="sheet-body hidden" id="spendAmountStep">
         <p class="amount-context" id="chosenCategoryLabel"></p>
         <input type="number" inputmode="decimal" class="amount-input" id="spendAmount" placeholder="0.00" />
+
         <label class="field-label" for="spendAccount">From</label>
         <select id="spendAccount" class="account-select"><!-- filled by app.js --></select>
+
+        <label class="field-label" for="spendDate">Date</label>
+        <input type="date" id="spendDate" class="account-select" />
+
+        <label class="field-label" for="spendPeriod">Time of day</label>
+        <select id="spendPeriod" class="account-select">
+          <option value="morning">Morning</option>
+          <option value="noon">Noon</option>
+          <option value="night">Night</option>
+          <option value="midnight">Midnight</option>
+        </select>
+
         <button class="btn btn-confirm" id="confirmSpend">Confirm</button>
       </div>
     </div>
@@ -81,10 +94,24 @@
       </div>
       <div class="sheet-body">
         <input type="number" inputmode="decimal" class="amount-input" id="incomeAmount" placeholder="0.00" />
+
         <label class="field-label" for="incomeAccount">To</label>
         <select id="incomeAccount" class="account-select"><!-- filled by app.js --></select>
+
         <label class="field-label" for="incomeCategory">Source (optional)</label>
         <select id="incomeCategory" class="account-select"><!-- filled by app.js --></select>
+
+        <label class="field-label" for="incomeDate">Date</label>
+        <input type="date" id="incomeDate" class="account-select" />
+
+        <label class="field-label" for="incomePeriod">Time of day</label>
+        <select id="incomePeriod" class="account-select">
+          <option value="morning">Morning</option>
+          <option value="noon">Noon</option>
+          <option value="night">Night</option>
+          <option value="midnight">Midnight</option>
+        </select>
+
         <button class="btn btn-confirm" id="confirmIncome">Confirm</button>
       </div>
     </div>

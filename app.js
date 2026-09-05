@@ -1,90 +1,15 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-const money = (n) => `RM ${Number(n).toFixed(2)}`;
-const todayISO = () => new Date().toISOString().slice(0, 10);
+import { supabase, money, todayISO, defaultPeriod } from "./db.js";
 
 let accountsCache = [];
 let categoriesCache = [];
 let chosenCategoryId = null;
-let chosenCategoryName = "";
-
-// ---------- BUDGET MATH ----------
-// Week-of-month is defined simply as: day 1-7 = week 1, 8-14 = week 2, etc.
-// This is an approximation, not calendar Mon-Sun weeks — easy to change later.
-function weekInfo(date) {
-  const day = date.getDate();
-  const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  const weekOfMonth = Math.ceil(day / 7);
-  const weeksInMonth = Math.ceil(daysInMonth / 7);
-  const weekStartDay = (weekOfMonth - 1) * 7 + 1;
-  const weekEndDay = Math.min(weekOfMonth * 7, daysInMonth);
-  return { weekOfMonth, weeksInMonth, weekStartDay, weekEndDay, daysInMonth };
-}
-
-function monthRange(date) {
-  const start = new Date(date.getFullYear(), date.getMonth(), 1);
-  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-  return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
-}
-
-async function getActiveFixedItems() {
-  const today = todayISO();
-  const { data, error } = await supabase
-    .from("fixed_items")
-    .select("*")
-    .lte("effective_from", today)
-    .order("effective_from", { ascending: true });
-  if (error) { console.error(error); return []; }
-
-  // Keep only the most recent row per item name (handles amount changes over time)
-  const latestByName = {};
-  for (const row of data) {
-    latestByName[row.name] = row; // later rows overwrite earlier ones since sorted ascending
-  }
-  return Object.values(latestByName);
-}
 
 async function loadDashboard() {
-  const now = new Date();
-  const { weekOfMonth, weeksInMonth, weekStartDay, weekEndDay } = weekInfo(now);
-  const { start: monthStart, end: monthEnd } = monthRange(now);
-
-  const weekStartISO = new Date(now.getFullYear(), now.getMonth(), weekStartDay).toISOString().slice(0, 10);
-  const weekEndISO = new Date(now.getFullYear(), now.getMonth(), weekEndDay).toISOString().slice(0, 10);
-
-  const fixedItems = await getActiveFixedItems();
-  const totals = { income: 0, saving: 0, bill: 0 };
-  fixedItems.forEach((i) => { totals[i.type] += Number(i.amount); });
-  const monthlyDisposable = totals.income - totals.saving - totals.bill;
-  const weeklyBudget = monthlyDisposable / weeksInMonth;
-
-  const { data: monthTx } = await supabase
-    .from("transactions")
-    .select("amount, type, date")
-    .gte("date", monthStart)
-    .lte("date", monthEnd);
-
-  const monthlySpent = (monthTx || [])
-    .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-
-  const weeklySpent = (monthTx || [])
-    .filter((t) => t.type === "expense" && t.date >= weekStartISO && t.date <= weekEndISO)
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-
-  const monthlyRemaining = monthlyDisposable - monthlySpent;
-  const weeklyRemaining = weeklyBudget - weeklySpent;
-
-  const monthName = now.toLocaleString("default", { month: "long" });
-  document.getElementById("weekLabel").textContent = `Week ${weekOfMonth} of ${monthName}`;
-  const heroEl = document.getElementById("weeklyRemaining");
-  heroEl.textContent = money(weeklyRemaining);
-  heroEl.classList.toggle("negative", weeklyRemaining < 0);
-  document.getElementById("monthlyLine").textContent = `This month: ${money(monthlyRemaining)}`;
-
+  document.getElementById("todayDate").textContent = new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
   await loadBalances();
   await loadRecent();
 }
@@ -93,15 +18,35 @@ async function loadBalances() {
   const { data, error } = await supabase.from("accounts").select("*").order("name");
   if (error) { console.error(error); return; }
   accountsCache = data;
-  const el = document.getElementById("balances");
-  el.innerHTML = data.map((a) => `<span>${a.name}: <b>${money(a.balance)}</b></span>`).join("");
+
+  document.getElementById("balances").innerHTML = data
+    .map((a) => `<span>${a.name}: <b>${money(a.balance)}</b></span>`)
+    .join("");
+
+  // "Available to spend" = Bank + TNG only (Cash held out on purpose for now).
+  const bank = data.find((a) => a.name === "Bank");
+  const tng = data.find((a) => a.name === "TNG Wallet");
+  const available = (Number(bank?.balance) || 0) + (Number(tng?.balance) || 0);
+  document.getElementById("availableAmount").textContent = money(available);
+
   populateAccountSelects();
 }
 
 function populateAccountSelects() {
-  const options = accountsCache.map((a) => `<option value="${a.id}">${a.name}</option>`).join("");
-  document.getElementById("spendAccount").innerHTML = options;
-  document.getElementById("incomeAccount").innerHTML = options;
+  const options = accountsCache
+    .map((a) => `<option value="${a.id}">${a.name}</option>`)
+    .join("");
+  const spendSelect = document.getElementById("spendAccount");
+  const incomeSelect = document.getElementById("incomeAccount");
+  spendSelect.innerHTML = options;
+  incomeSelect.innerHTML = options;
+
+  // Default "From" / "To" to TNG Wallet if it exists.
+  const tng = accountsCache.find((a) => a.name === "TNG Wallet");
+  if (tng) {
+    spendSelect.value = tng.id;
+    incomeSelect.value = tng.id;
+  }
 }
 
 async function loadCategories() {
@@ -109,13 +54,11 @@ async function loadCategories() {
   if (error) { console.error(error); return; }
   categoriesCache = data;
 
-  // Category picker (spend flow): top-level categories only
   const topLevel = data.filter((c) => !c.parent_id);
   document.getElementById("categoryGrid").innerHTML = topLevel
     .map((c) => `<button class="category-btn" data-id="${c.id}" data-name="${c.name}">${c.name}</button>`)
     .join("");
 
-  // Income source dropdown: all categories, optional
   const incomeCategorySelect = document.getElementById("incomeCategory");
   incomeCategorySelect.innerHTML =
     `<option value="">(none)</option>` +
@@ -125,7 +68,7 @@ async function loadCategories() {
 async function loadRecent() {
   const { data, error } = await supabase
     .from("transactions")
-    .select("id, date, type, amount, note, accounts(name), categories(name)")
+    .select("id, date, time_period, type, amount, accounts(name), categories(name)")
     .order("created_at", { ascending: false })
     .limit(6);
   if (error) { console.error(error); return; }
@@ -134,10 +77,11 @@ async function loadRecent() {
     .map((t) => {
       const label = t.categories?.name || (t.type === "income" ? "Income" : "Expense");
       const sign = t.type === "expense" ? "-" : "+";
+      const period = t.time_period ? ` · ${t.time_period}` : "";
       return `<li>
         <span>
           <div class="recent-cat">${label}</div>
-          <div class="recent-meta">${t.accounts?.name || ""} · ${t.date}</div>
+          <div class="recent-meta">${t.accounts?.name || ""} · ${t.date}${period}</div>
         </span>
         <span class="recent-amt ${t.type}">${sign}${money(t.amount)}</span>
       </li>`;
@@ -158,6 +102,7 @@ document.getElementById("openSpend").addEventListener("click", () => {
   spendBack.style.visibility = "hidden";
   spendStepTitle.textContent = "Pick a category";
   spendOverlay.classList.add("open");
+  loadCategories(); // reset grid back to top-level each time it opens
 });
 
 document.getElementById("spendClose").addEventListener("click", () => {
@@ -173,7 +118,6 @@ document.getElementById("categoryGrid").addEventListener("click", (e) => {
   const children = categoriesCache.filter((c) => c.parent_id === id);
 
   if (children.length > 0) {
-    // Show subcategories in the same grid, with a back button
     document.getElementById("categoryGrid").innerHTML = children
       .map((c) => `<button class="category-btn" data-id="${c.id}" data-name="${c.name}">${c.name}</button>`)
       .join("");
@@ -185,8 +129,9 @@ document.getElementById("categoryGrid").addEventListener("click", (e) => {
     });
   } else {
     chosenCategoryId = id;
-    chosenCategoryName = name;
     document.getElementById("chosenCategoryLabel").textContent = name;
+    document.getElementById("spendDate").value = todayISO();
+    document.getElementById("spendPeriod").value = defaultPeriod();
     categoryStep.classList.add("hidden");
     amountStep.classList.remove("hidden");
   }
@@ -195,10 +140,13 @@ document.getElementById("categoryGrid").addEventListener("click", (e) => {
 document.getElementById("confirmSpend").addEventListener("click", async () => {
   const amount = parseFloat(document.getElementById("spendAmount").value);
   const accountId = document.getElementById("spendAccount").value;
+  const date = document.getElementById("spendDate").value || todayISO();
+  const timePeriod = document.getElementById("spendPeriod").value;
   if (!amount || amount <= 0) return;
 
   await supabase.from("transactions").insert({
-    date: todayISO(),
+    date,
+    time_period: timePeriod,
     type: "expense",
     amount,
     account_id: accountId,
@@ -215,6 +163,8 @@ document.getElementById("confirmSpend").addEventListener("click", async () => {
 
 // ---------- INCOME FLOW ----------
 document.getElementById("openIncome").addEventListener("click", () => {
+  document.getElementById("incomeDate").value = todayISO();
+  document.getElementById("incomePeriod").value = defaultPeriod();
   document.getElementById("incomeOverlay").classList.add("open");
 });
 
@@ -227,10 +177,13 @@ document.getElementById("confirmIncome").addEventListener("click", async () => {
   const amount = parseFloat(document.getElementById("incomeAmount").value);
   const accountId = document.getElementById("incomeAccount").value;
   const categoryId = document.getElementById("incomeCategory").value || null;
+  const date = document.getElementById("incomeDate").value || todayISO();
+  const timePeriod = document.getElementById("incomePeriod").value;
   if (!amount || amount <= 0) return;
 
   await supabase.from("transactions").insert({
-    date: todayISO(),
+    date,
+    time_period: timePeriod,
     type: "income",
     amount,
     account_id: accountId,
