@@ -1,0 +1,264 @@
+:root {
+  --ink: #1B2E2B;
+  --surface: #24413C;
+  --paper: #F3EFE6;
+  --paper-dim: #C7C2B4;
+  --gold: #C9A24B;
+  --brick: #C1533E;
+  --divider: #3A5750;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  padding-bottom: 40px;
+}
+
+.topbar {
+  padding: 20px 24px 4px;
+}
+
+.wordmark {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: var(--paper-dim);
+}
+
+.dashboard {
+  padding: 12px 24px 0;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.hero {
+  text-align: center;
+  padding: 28px 0 8px;
+}
+
+.hero-label {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: var(--paper-dim);
+}
+
+.hero-number {
+  margin: 0;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-weight: 700;
+  font-size: 56px;
+  line-height: 1.1;
+  color: var(--gold);
+}
+
+.hero-number.negative {
+  color: var(--brick);
+}
+
+.hero-caption {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--paper-dim);
+}
+
+.divider {
+  height: 1px;
+  background: var(--divider);
+  margin: 20px 0;
+}
+
+.secondary-line {
+  text-align: center;
+  font-size: 15px;
+  color: var(--paper-dim);
+  margin-bottom: 18px;
+}
+
+.balances {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--paper-dim);
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.balances span b {
+  color: var(--paper);
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.btn {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-spend {
+  background: var(--brick);
+  color: var(--paper);
+}
+
+.btn-income {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.btn-confirm {
+  background: var(--gold);
+  color: var(--ink);
+  width: 100%;
+  margin-top: 20px;
+  padding: 16px 0;
+}
+
+.recent-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--paper-dim);
+  margin: 0 0 8px;
+}
+
+.recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.recent-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-top: 1px solid var(--divider);
+  font-size: 15px;
+}
+
+.recent-list li:last-child {
+  border-bottom: 1px solid var(--divider);
+}
+
+.recent-cat { color: var(--paper); }
+.recent-meta { color: var(--paper-dim); font-size: 13px; }
+.recent-amt.expense { color: var(--brick); }
+.recent-amt.income { color: var(--gold); }
+
+/* Bottom sheet modals */
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: flex-end;
+  z-index: 10;
+}
+
+.sheet-overlay.open {
+  display: flex;
+}
+
+.sheet {
+  background: var(--surface);
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  border-radius: 20px 20px 0 0;
+  padding: 16px 24px 32px;
+}
+
+.sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--paper);
+}
+
+.sheet-back, .sheet-close {
+  background: none;
+  border: none;
+  color: var(--paper-dim);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.hidden { display: none; }
+
+.category-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.category-btn {
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  padding: 18px 10px;
+  font-size: 15px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.category-btn:active {
+  background: var(--divider);
+}
+
+.amount-context {
+  color: var(--paper-dim);
+  font-size: 14px;
+  margin: 0 0 10px;
+}
+
+.amount-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--divider);
+  color: var(--paper);
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 40px;
+  padding: 8px 0;
+  margin-bottom: 20px;
+  outline: none;
+}
+
+.field-label {
+  display: block;
+  font-size: 13px;
+  color: var(--paper-dim);
+  margin-bottom: 6px;
+}
+
+.account-select {
+  width: 100%;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--divider);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 15px;
+  margin-bottom: 16px;
+}

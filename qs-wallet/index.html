@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#1B2E2B" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<title>QS Wallet</title>
+</head>
+<body>
+
+  <header class="topbar">
+    <span class="wordmark">QS Wallet</span>
+  </header>
+
+  <main class="dashboard">
+    <section class="hero">
+      <p class="hero-label" id="weekLabel">Week — of —</p>
+      <p class="hero-number" id="weeklyRemaining">RM —</p>
+      <p class="hero-caption">left to spend this week</p>
+    </section>
+
+    <div class="divider"></div>
+
+    <section class="secondary-line">
+      <span id="monthlyLine">This month: RM —</span>
+    </section>
+
+    <section class="balances" id="balances">
+      <!-- filled by app.js -->
+    </section>
+
+    <section class="actions">
+      <button class="btn btn-spend" id="openSpend">– Spend</button>
+      <button class="btn btn-income" id="openIncome">+ Income</button>
+    </section>
+
+    <section class="recent">
+      <h2 class="recent-title">Recent</h2>
+      <ul class="recent-list" id="recentList">
+        <!-- filled by app.js -->
+      </ul>
+    </section>
+  </main>
+
+  <!-- SPEND FLOW MODAL -->
+  <div class="sheet-overlay" id="spendOverlay">
+    <div class="sheet">
+      <div class="sheet-header">
+        <button class="sheet-back" id="spendBack" style="visibility:hidden;">Back</button>
+        <span id="spendStepTitle">Pick a category</span>
+        <button class="sheet-close" id="spendClose">Close</button>
+      </div>
+
+      <div class="sheet-body" id="spendCategoryStep">
+        <div class="category-grid" id="categoryGrid"><!-- filled by app.js --></div>
+      </div>
+
+      <div class="sheet-body hidden" id="spendAmountStep">
+        <p class="amount-context" id="chosenCategoryLabel"></p>
+        <input type="number" inputmode="decimal" class="amount-input" id="spendAmount" placeholder="0.00" />
+        <label class="field-label" for="spendAccount">From</label>
+        <select id="spendAccount" class="account-select"><!-- filled by app.js --></select>
+        <button class="btn btn-confirm" id="confirmSpend">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INCOME FLOW MODAL -->
+  <div class="sheet-overlay" id="incomeOverlay">
+    <div class="sheet">
+      <div class="sheet-header">
+        <span></span>
+        <span>Add income</span>
+        <button class="sheet-close" id="incomeClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <input type="number" inputmode="decimal" class="amount-input" id="incomeAmount" placeholder="0.00" />
+        <label class="field-label" for="incomeAccount">To</label>
+        <select id="incomeAccount" class="account-select"><!-- filled by app.js --></select>
+        <label class="field-label" for="incomeCategory">Source (optional)</label>
+        <select id="incomeCategory" class="account-select"><!-- filled by app.js --></select>
+        <button class="btn btn-confirm" id="confirmIncome">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
