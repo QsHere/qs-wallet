@@ -20,9 +20,15 @@ function renderNode(cat) {
       <div class="tree-row">
         <span class="tree-name"><span class="tile-mini" style="background:${colorFor(cat.name)}33">${cat.icon || "🏷️"}</span>${cat.name}</span>
         <span class="tree-actions">
+          <button class="tree-btn" data-edit="${cat.id}">Edit</button>
           <button class="tree-btn" data-add="${cat.id}">+ sub</button>
           <button class="tree-btn danger" data-del="${cat.id}">Delete</button>
         </span>
+      </div>
+      <div class="inline-add hidden" id="edit-${cat.id}">
+        <input type="text" value="${cat.icon || "🏷️"}" class="text-input icon-input" id="edit-icon-${cat.id}" maxlength="4" />
+        <input type="text" value="${cat.name}" class="text-input" id="edit-name-${cat.id}" />
+        <button class="small-btn btn-confirm" data-save-edit="${cat.id}">Save</button>
       </div>
       <div class="inline-add hidden" id="add-${cat.id}">
         <input type="text" placeholder="🏷️" class="text-input icon-input" id="icon-${cat.id}" maxlength="4" />
@@ -46,6 +52,24 @@ document.getElementById("categoryTree").addEventListener("click", async (e) => {
   const addBtn = e.target.closest("[data-add]");
   const delBtn = e.target.closest("[data-del]");
   const confirmBtn = e.target.closest("[data-confirm]");
+  const editBtn = e.target.closest("[data-edit]");
+  const saveEditBtn = e.target.closest("[data-save-edit]");
+
+  if (editBtn) {
+    document.getElementById(`edit-${editBtn.dataset.edit}`).classList.toggle("hidden");
+    return;
+  }
+
+  if (saveEditBtn) {
+    const id = saveEditBtn.dataset.saveEdit;
+    const name = document.getElementById(`edit-name-${id}`).value.trim();
+    const icon = document.getElementById(`edit-icon-${id}`).value.trim() || "🏷️";
+    if (name) {
+      await supabase.from("categories").update({ name, icon }).eq("id", id);
+      await loadTree();
+    }
+    return;
+  }
 
   if (addBtn) {
     document.getElementById(`add-${addBtn.dataset.add}`).classList.toggle("hidden");

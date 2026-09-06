@@ -75,7 +75,28 @@
       <div class="sheet-body">
         <p class="amount-context" id="debtActionBalance"></p>
         <button class="btn-confirm" id="openRecordPayment">Record a payment</button>
+        <button class="btn-secondary" id="openIncreaseDebt" style="color:var(--blue); background:var(--bg-elevated-2);">Add more to this debt</button>
         <button class="btn-secondary" id="deleteDebt">Delete this debt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INCREASE DEBT SHEET -->
+  <div class="sheet-overlay" id="increaseOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="increaseTitle">Add more owed</span>
+        <button class="sheet-close" id="increaseClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="amount-row">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="increaseAmount" placeholder="0.00" />
+        </div>
+        <p class="hero-caption" id="increaseHint" style="text-align:left; margin-top:0;"></p>
+        <button class="btn-confirm" id="confirmIncrease">Add to balance</button>
       </div>
     </div>
   </div>

@@ -2,7 +2,9 @@ import { supabase, money, todayISO, defaultPeriod, colorFor, animateNumber } fro
 
 let accountsCache = [];
 let categoriesCache = [];
+let recentCache = [];
 let chosenCategoryId = null;
+let hideBalance = localStorage.getItem("qs-hide-balance") === "1";
 
 const spendState = { accountId: null, date: todayISO(), period: defaultPeriod() };
 const incomeState = { accountId: null, date: todayISO(), period: defaultPeriod() };
@@ -48,7 +50,8 @@ async function loadBalances() {
   const available = (Number(bank?.balance) || 0) + (Number(tng?.balance) || 0);
   const heroEl = document.getElementById("availableAmount");
   heroEl.classList.toggle("negative", available < 0);
-  animateNumber(heroEl, available);
+  heroEl.dataset.rawValue = available;
+  renderHero();
 
   const defaultAccountId = (tng || data[0])?.id || null;
   spendState.accountId = defaultAccountId;
@@ -56,6 +59,30 @@ async function loadBalances() {
   renderAccountPills("spendAccountPills", spendState);
   renderAccountPills("incomeAccountPills", incomeState);
 }
+
+function renderHero() {
+  const heroEl = document.getElementById("availableAmount");
+  const value = Number(heroEl.dataset.rawValue || 0);
+  if (hideBalance) {
+    heroEl.textContent = "RM ••••";
+  } else {
+    animateNumber(heroEl, value);
+  }
+  document.getElementById("eyeIcon").innerHTML = hideBalance
+    ? `<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.6 21.6 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.6 21.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`
+    : `<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>`;
+}
+
+document.getElementById("toggleVisibility").addEventListener("click", () => {
+  hideBalance = !hideBalance;
+  localStorage.setItem("qs-hide-balance", hideBalance ? "1" : "0");
+  renderHero();
+});
+
+document.getElementById("toggleAccounts").addEventListener("click", () => {
+  document.getElementById("toggleAccounts").classList.toggle("expanded");
+  document.getElementById("accountsCollapse").classList.toggle("expanded");
+});
 
 function renderAccountPills(containerId, state) {
   const container = document.getElementById(containerId);
@@ -148,10 +175,11 @@ function renderCategoryGrid(list) {
 async function loadRecent() {
   const { data, error } = await supabase
     .from("transactions")
-    .select("id, date, time_period, type, amount, source, accounts(name), categories(name, icon)")
+    .select("id, date, time_period, type, amount, source, note, account_id, category_id, accounts(name), categories(name, icon)")
     .order("created_at", { ascending: false })
-    .limit(6);
+    .limit(5);
   if (error) { console.error(error); return; }
+  recentCache = data;
 
   document.getElementById("recentList").innerHTML = data.length
     ? data.map(recentRowHTML).join("")
@@ -164,18 +192,102 @@ function recentRowHTML(t) {
   const icon = isIncome ? "💰" : (t.categories?.icon || "🏷️");
   const tint = isIncome ? "#30D15833" : colorFor(label) + "33";
   const sign = isIncome ? "+" : "-";
-  const period = t.time_period ? ` · ${t.time_period}` : "";
-  return `<li>
+  return `<li class="tappable" data-id="${t.id}">
     <span class="recent-left">
       <span class="recent-icon" style="background:${tint}">${icon}</span>
-      <span>
-        <div class="recent-cat">${label}</div>
-        <div class="recent-meta">${t.accounts?.name || ""} · ${t.date}${period}</div>
-      </span>
+      <span class="recent-cat">${label}</span>
     </span>
     <span class="recent-amt ${t.type}">${sign}${money(t.amount)}</span>
   </li>`;
 }
+
+// ---------- TRANSACTION DETAIL SHEET ----------
+let activeDetailId = null;
+
+document.getElementById("recentList").addEventListener("click", (e) => {
+  const row = e.target.closest("[data-id]");
+  if (!row) return;
+  openDetail(row.dataset.id);
+});
+
+function openDetail(id) {
+  const t = recentCache.find((x) => x.id === id);
+  if (!t) return;
+  activeDetailId = id;
+  const isIncome = t.type === "income";
+  const label = isIncome ? (t.source || "Income") : (t.categories?.name || "Expense");
+  const icon = isIncome ? "💰" : (t.categories?.icon || "🏷️");
+  const tint = isIncome ? "#30D15833" : colorFor(label) + "33";
+
+  document.getElementById("detailIcon").textContent = icon;
+  document.getElementById("detailIconWrap").style.background = tint;
+  const amtEl = document.getElementById("detailAmount");
+  amtEl.textContent = `${isIncome ? "+" : "-"}${money(t.amount)}`;
+  amtEl.className = `detail-amount ${t.type}`;
+
+  document.getElementById("detailCategory").textContent = label;
+  document.getElementById("detailAccount").textContent = t.accounts?.name || "—";
+  document.getElementById("detailDate").textContent = t.date;
+  document.getElementById("detailPeriod").textContent = t.time_period || "—";
+
+  const noteRow = document.getElementById("detailNoteRow");
+  if (t.note) {
+    noteRow.classList.remove("hidden");
+    document.getElementById("detailNote").textContent = t.note;
+  } else {
+    noteRow.classList.add("hidden");
+  }
+
+  document.getElementById("detailEditRow").classList.add("hidden");
+  document.getElementById("detailEditDateWrap").classList.add("hidden");
+  document.getElementById("detailSaveEdit").classList.add("hidden");
+  document.getElementById("detailEditToggle").classList.remove("hidden");
+  document.getElementById("detailEditAmount").value = t.amount;
+  document.getElementById("detailEditDate").value = t.date;
+
+  document.getElementById("detailOverlay").classList.add("open");
+}
+
+document.getElementById("detailClose").addEventListener("click", () => {
+  document.getElementById("detailOverlay").classList.remove("open");
+});
+
+document.getElementById("detailEditToggle").addEventListener("click", () => {
+  document.getElementById("detailEditRow").classList.remove("hidden");
+  document.getElementById("detailEditDateWrap").classList.remove("hidden");
+  document.getElementById("detailSaveEdit").classList.remove("hidden");
+  document.getElementById("detailEditToggle").classList.add("hidden");
+});
+
+document.getElementById("detailSaveEdit").addEventListener("click", async () => {
+  const t = recentCache.find((x) => x.id === activeDetailId);
+  const newAmount = parseFloat(document.getElementById("detailEditAmount").value);
+  const newDate = document.getElementById("detailEditDate").value;
+  if (!newAmount || newAmount <= 0 || !newDate) return;
+
+  const diff = newAmount - Number(t.amount);
+  const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
+  const balanceDelta = t.type === "expense" ? -diff : diff;
+  await supabase.from("accounts").update({ balance: Number(account.balance) + balanceDelta }).eq("id", t.account_id);
+  await supabase.from("transactions").update({ amount: newAmount, date: newDate }).eq("id", activeDetailId);
+
+  document.getElementById("detailOverlay").classList.remove("open");
+  await loadDashboard();
+});
+
+document.getElementById("detailDelete").addEventListener("click", async () => {
+  const ok = confirm("Delete this transaction? This will also reverse its effect on the account balance.");
+  if (!ok) return;
+
+  const t = recentCache.find((x) => x.id === activeDetailId);
+  const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
+  const revert = t.type === "expense" ? Number(t.amount) : -Number(t.amount);
+  await supabase.from("accounts").update({ balance: Number(account.balance) + revert }).eq("id", t.account_id);
+  await supabase.from("transactions").delete().eq("id", activeDetailId);
+
+  document.getElementById("detailOverlay").classList.remove("open");
+  await loadDashboard();
+});
 
 // ---------- MENU SHEET ----------
 document.getElementById("openMenu").addEventListener("click", () => {
@@ -241,6 +353,7 @@ document.getElementById("confirmSpend").addEventListener("click", async () => {
   const amount = parseFloat(document.getElementById("spendAmount").value);
   if (!amount || amount <= 0) return;
   const accountId = spendState.accountId;
+  const note = document.getElementById("spendNote").value.trim() || null;
 
   await supabase.from("transactions").insert({
     date: spendState.date,
@@ -249,6 +362,7 @@ document.getElementById("confirmSpend").addEventListener("click", async () => {
     amount,
     account_id: accountId,
     category_id: chosenCategoryId,
+    note,
   });
 
   const account = accountsCache.find((a) => a.id === accountId);
@@ -256,6 +370,7 @@ document.getElementById("confirmSpend").addEventListener("click", async () => {
 
   spendOverlay.classList.remove("open");
   document.getElementById("spendAmount").value = "";
+  document.getElementById("spendNote").value = "";
   await loadDashboard();
 });
 

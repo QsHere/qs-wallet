@@ -80,28 +80,29 @@ a { -webkit-tap-highlight-color: transparent; }
   color: var(--label);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
 }
 
-.wordmark .mark {
-  color: var(--green);
-  font-weight: 800;
-  font-size: 18px;
+.app-icon-mini {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: block;
 }
 
 .icon-btn {
   background: var(--bg-elevated);
   border: none;
-  color: var(--label);
+  color: var(--label-secondary);
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+.icon-btn svg { width: 18px; height: 18px; }
 
 .nav-back {
   color: var(--blue);
@@ -131,7 +132,22 @@ a { -webkit-tap-highlight-color: transparent; }
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--label-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
+
+.eye-btn {
+  background: none;
+  border: none;
+  color: var(--label-tertiary);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+.eye-btn svg { width: 15px; height: 15px; }
 
 .hero-number {
   margin: 0;
@@ -158,13 +174,46 @@ a { -webkit-tap-highlight-color: transparent; }
   border: none;
 }
 
+.collapse-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--label-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.collapse-chevron {
+  width: 11px;
+  height: 11px;
+  transition: transform 0.3s var(--spring);
+}
+
+.collapse-toggle.expanded .collapse-chevron { transform: rotate(180deg); }
+
+.collapse-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s var(--spring);
+}
+
+.collapse-content.expanded { grid-template-rows: 1fr; }
+
+.collapse-content > div { overflow: hidden; min-height: 0; }
+
 .balances {
   display: flex;
   justify-content: center;
   gap: 16px;
   font-size: 13px;
   color: var(--label-secondary);
-  margin-bottom: 10px;
+  padding-top: 14px;
   flex-wrap: wrap;
 }
 
@@ -173,7 +222,7 @@ a { -webkit-tap-highlight-color: transparent; }
 .debts-summary {
   text-align: center;
   font-size: 13px;
-  margin-bottom: 26px;
+  padding-top: 10px;
 }
 
 .debts-summary a {
@@ -721,6 +770,41 @@ a { -webkit-tap-highlight-color: transparent; }
   margin: 0 0 8px;
   padding: 0 4px;
 }
+
+/* ---------- Transaction detail sheet ---------- */
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.detail-amount {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.detail-amount.expense { color: var(--red); }
+.detail-amount.income { color: var(--green); }
+
+.detail-rows {
+  background: var(--bg-elevated-2);
+  border-radius: 14px;
+  padding: 2px 14px;
+  margin-bottom: 6px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-top: 1px solid var(--separator);
+  font-size: 14px;
+}
+.detail-row:first-child { border-top: none; }
+.detail-row .k { color: var(--label-secondary); }
+.detail-row .v { color: var(--label); font-weight: 500; text-align: right; max-width: 60%; }
 
 /* ---------- Aliases for Recent/History list markup ---------- */
 .recent-title {

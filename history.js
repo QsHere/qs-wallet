@@ -63,9 +63,31 @@ document.getElementById("historyList").addEventListener("click", (e) => {
 function openEdit(id) {
   const t = transactions.find((x) => x.id === id);
   editingId = id;
-  const label = t.type === "income" ? (t.source || "Income") : (t.categories?.name || "Expense");
-  document.getElementById("editLabel").textContent = label;
+  const isIncome = t.type === "income";
+  const label = isIncome ? (t.source || "Income") : (t.categories?.name || "Expense");
+  const icon = isIncome ? "💰" : (t.categories?.icon || "🏷️");
+  const tint = isIncome ? "#30D15833" : colorFor(label) + "33";
+
+  document.getElementById("detailIcon").textContent = icon;
+  document.getElementById("detailIconWrap").style.background = tint;
+  const amtEl = document.getElementById("detailAmountLabel");
+  amtEl.textContent = `${isIncome ? "+" : "-"}${money(t.amount)}`;
+  amtEl.className = `detail-amount ${t.type}`;
+
+  document.getElementById("detailCategory").textContent = label;
+  document.getElementById("detailAccount").textContent = t.accounts?.name || "—";
+  document.getElementById("detailPeriod").textContent = t.time_period || "—";
+
+  const noteRow = document.getElementById("detailNoteRow");
+  if (t.note) {
+    noteRow.classList.remove("hidden");
+    document.getElementById("detailNote").textContent = t.note;
+  } else {
+    noteRow.classList.add("hidden");
+  }
+
   document.getElementById("editAmount").value = t.amount;
+  document.getElementById("editDate").value = t.date;
   document.getElementById("editOverlay").classList.add("open");
 }
 
@@ -76,13 +98,14 @@ document.getElementById("editClose").addEventListener("click", () => {
 document.getElementById("saveEdit").addEventListener("click", async () => {
   const t = transactions.find((x) => x.id === editingId);
   const newAmount = parseFloat(document.getElementById("editAmount").value);
-  if (!newAmount || newAmount <= 0) return;
+  const newDate = document.getElementById("editDate").value;
+  if (!newAmount || newAmount <= 0 || !newDate) return;
 
   const diff = newAmount - Number(t.amount);
   const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
   const balanceDelta = t.type === "expense" ? -diff : diff;
   await supabase.from("accounts").update({ balance: Number(account.balance) + balanceDelta }).eq("id", t.account_id);
-  await supabase.from("transactions").update({ amount: newAmount }).eq("id", editingId);
+  await supabase.from("transactions").update({ amount: newAmount, date: newDate }).eq("id", editingId);
 
   document.getElementById("editOverlay").classList.remove("open");
   await loadHistory();

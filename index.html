@@ -13,21 +13,36 @@
 <body>
 
   <header class="topbar">
-    <span class="wordmark"><span class="mark">Q</span>QS Wallet</span>
-    <button class="icon-btn" id="openMenu" title="Menu">⋯</button>
+    <span class="wordmark"><img src="icon-192.png" class="app-icon-mini" alt="" />QS Wallet</span>
+    <button class="icon-btn" id="openMenu" title="Menu">
+      <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+    </button>
   </header>
 
   <main class="dashboard">
     <section class="hero">
-      <p class="hero-label">Available to spend</p>
+      <p class="hero-label">
+        Available to spend
+        <button class="eye-btn" id="toggleVisibility" title="Show/hide">
+          <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </p>
       <p class="hero-number" id="availableAmount">RM —</p>
       <p class="hero-caption" id="todayDate">—</p>
     </section>
 
-    <div class="divider"></div>
-
-    <section class="balances" id="balances"></section>
-    <section class="debts-summary" id="debtsSummary"></section>
+    <button class="collapse-toggle" id="toggleAccounts">
+      <span>Accounts &amp; Debts</span>
+      <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="collapse-content" id="accountsCollapse">
+      <div>
+        <section class="balances" id="balances"></section>
+        <section class="debts-summary" id="debtsSummary"></section>
+      </div>
+    </div>
 
     <section class="actions">
       <button class="btn btn-spend" id="openSpend"><span>–</span> Spend</button>
@@ -96,6 +111,9 @@
           <button type="button" class="pill" data-period="midnight"><span class="pill-icon">🌑</span> Midnight</button>
         </div>
 
+        <label class="field-label">Note (optional)</label>
+        <input type="text" id="spendNote" class="text-input" placeholder="Add a note" />
+
         <button class="btn-confirm" id="confirmSpend">Confirm</button>
       </div>
     </div>
@@ -141,6 +159,44 @@
         </div>
 
         <button class="btn-confirm" id="confirmIncome">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSACTION DETAIL SHEET -->
+  <div class="sheet-overlay" id="detailOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span>Transaction</span>
+        <button class="sheet-close" id="detailClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="detail-header">
+          <span class="tile-mini" id="detailIconWrap" style="width:40px;height:40px;border-radius:12px;font-size:20px;"><span id="detailIcon"></span></span>
+          <span class="detail-amount" id="detailAmount"></span>
+        </div>
+        <div class="detail-rows">
+          <div class="detail-row"><span class="k">Category</span><span class="v" id="detailCategory"></span></div>
+          <div class="detail-row"><span class="k">Account</span><span class="v" id="detailAccount"></span></div>
+          <div class="detail-row"><span class="k">Date</span><span class="v" id="detailDate"></span></div>
+          <div class="detail-row"><span class="k">Time of day</span><span class="v" id="detailPeriod"></span></div>
+          <div class="detail-row hidden" id="detailNoteRow"><span class="k">Note</span><span class="v" id="detailNote"></span></div>
+        </div>
+
+        <div class="amount-row hidden" id="detailEditRow">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="detailEditAmount" />
+        </div>
+        <div class="hidden" id="detailEditDateWrap">
+          <label class="field-label">Date</label>
+          <input type="date" class="date-input" id="detailEditDate" />
+        </div>
+
+        <button class="btn-confirm hidden" id="detailSaveEdit">Save changes</button>
+        <button class="btn-secondary" id="detailEditToggle" style="color:var(--blue); background:var(--bg-elevated-2);">Edit amount or date</button>
+        <button class="btn-secondary" id="detailDelete">Delete this transaction</button>
       </div>
     </div>
   </div>

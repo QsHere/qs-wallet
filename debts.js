@@ -91,6 +91,35 @@ document.getElementById("deleteDebt").addEventListener("click", async () => {
   await loadAll();
 });
 
+// ---------- Increase debt (e.g. they borrowed/owe more, no cash moved yet) ----------
+document.getElementById("openIncreaseDebt").addEventListener("click", () => {
+  const d = debts.find((x) => x.id === activeDebtId);
+  document.getElementById("debtActionOverlay").classList.remove("open");
+  document.getElementById("increaseTitle").textContent = `Add to ${d.person}'s balance`;
+  document.getElementById("increaseHint").textContent = d.direction === "owed_to_me"
+    ? "This adds to how much they owe you. It won't touch your account balances — only a payment does that."
+    : "This adds to how much you owe them. It won't touch your account balances — only a payment does that.";
+  document.getElementById("increaseAmount").value = "";
+  document.getElementById("increaseOverlay").classList.add("open");
+});
+
+document.getElementById("increaseClose").addEventListener("click", () => {
+  document.getElementById("increaseOverlay").classList.remove("open");
+});
+
+document.getElementById("confirmIncrease").addEventListener("click", async () => {
+  const amount = parseFloat(document.getElementById("increaseAmount").value);
+  if (!amount || amount <= 0) return;
+  const d = debts.find((x) => x.id === activeDebtId);
+
+  const newBalance = Number(d.balance) + amount;
+  await supabase.from("debts").update({ balance: newBalance }).eq("id", d.id);
+  await supabase.from("debt_activity").insert({ debt_id: d.id, date: todayISO(), amount, type: "increase" });
+
+  document.getElementById("increaseOverlay").classList.remove("open");
+  await loadAll();
+});
+
 // ---------- Add debt ----------
 document.getElementById("openAddDebt").addEventListener("click", () => {
   document.getElementById("addDebtOverlay").classList.add("open");

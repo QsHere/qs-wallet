@@ -21,20 +21,34 @@
     <div id="historyList"></div>
   </main>
 
-  <!-- EDIT / DELETE SHEET -->
+  <!-- TRANSACTION DETAIL SHEET -->
   <div class="sheet-overlay" id="editOverlay">
     <div class="sheet">
       <div class="sheet-handle"></div>
       <div class="sheet-header">
         <span></span>
-        <span id="editLabel">Transaction</span>
+        <span>Transaction</span>
         <button class="sheet-close" id="editClose">Close</button>
       </div>
       <div class="sheet-body">
-        <div class="amount-row">
+        <div class="detail-header">
+          <span class="tile-mini" id="detailIconWrap" style="width:40px;height:40px;border-radius:12px;font-size:20px;"><span id="detailIcon"></span></span>
+          <span class="detail-amount" id="detailAmountLabel"></span>
+        </div>
+        <div class="detail-rows">
+          <div class="detail-row"><span class="k">Category</span><span class="v" id="detailCategory"></span></div>
+          <div class="detail-row"><span class="k">Account</span><span class="v" id="detailAccount"></span></div>
+          <div class="detail-row"><span class="k">Time of day</span><span class="v" id="detailPeriod"></span></div>
+          <div class="detail-row hidden" id="detailNoteRow"><span class="k">Note</span><span class="v" id="detailNote"></span></div>
+        </div>
+
+        <div class="amount-row" id="editAmountRow">
           <span class="amount-currency">RM</span>
           <input type="number" inputmode="decimal" class="amount-input" id="editAmount" />
         </div>
+        <label class="field-label">Date</label>
+        <input type="date" class="date-input" id="editDate" />
+
         <button class="btn-confirm" id="saveEdit">Save changes</button>
         <button class="btn-secondary" id="deleteEntry">Delete this transaction</button>
       </div>
