@@ -1,4 +1,4 @@
-import { supabase } from "./db.js";
+import { supabase, colorFor } from "./db.js";
 
 let categories = [];
 
@@ -18,7 +18,7 @@ function renderNode(cat) {
   return `
     <li class="tree-item">
       <div class="tree-row">
-        <span class="tree-name"><span class="cat-icon">${cat.icon || "🏷️"}</span>${cat.name}</span>
+        <span class="tree-name"><span class="tile-mini" style="background:${colorFor(cat.name)}33">${cat.icon || "🏷️"}</span>${cat.name}</span>
         <span class="tree-actions">
           <button class="tree-btn" data-add="${cat.id}">+ sub</button>
           <button class="tree-btn danger" data-del="${cat.id}">Delete</button>

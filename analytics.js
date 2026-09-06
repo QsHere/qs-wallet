@@ -71,10 +71,20 @@ function setPeriod(period) {
   currentPeriod = period;
   document.getElementById("btnWeek").classList.toggle("active", period === "week");
   document.getElementById("btnMonth").classList.toggle("active", period === "month");
+  positionThumb();
   loadChart();
+}
+
+function positionThumb() {
+  const activeBtn = document.querySelector(".toggle-btn.active");
+  const thumb = document.getElementById("segThumb");
+  thumb.style.width = `${activeBtn.offsetWidth}px`;
+  thumb.style.transform = `translateX(${activeBtn.offsetLeft - 4}px)`;
 }
 
 document.getElementById("btnWeek").addEventListener("click", () => setPeriod("week"));
 document.getElementById("btnMonth").addEventListener("click", () => setPeriod("month"));
 
+window.addEventListener("load", positionThumb);
+positionThumb();
 loadChart();

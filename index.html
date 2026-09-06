@@ -3,12 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#1B2E2B" />
+<meta name="theme-color" content="#000000" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon-192.png" />
 <link rel="apple-touch-icon" href="icon-192.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css" />
 <title>QS Wallet</title>
 </head>
@@ -29,6 +27,7 @@
     <div class="divider"></div>
 
     <section class="balances" id="balances"></section>
+    <section class="debts-summary" id="debtsSummary"></section>
 
     <section class="actions">
       <button class="btn btn-spend" id="openSpend"><span>–</span> Spend</button>
@@ -48,6 +47,7 @@
       <ul class="menu-list">
         <li><a href="history.html"><span class="menu-icon">📜</span> History</a></li>
         <li><a href="analytics.html"><span class="menu-icon">📊</span> Analytics</a></li>
+        <li><a href="debts.html"><span class="menu-icon">🤝</span> Debts</a></li>
         <li><a href="settings.html"><span class="menu-icon">🏷️</span> Categories</a></li>
       </ul>
     </div>
@@ -68,7 +68,7 @@
       </div>
 
       <div class="sheet-body hidden" id="spendAmountStep">
-        <p class="amount-context"><span class="cat-icon" id="chosenCategoryIcon"></span> <span id="chosenCategoryLabel"></span></p>
+        <p class="amount-context"><span class="tile-mini" id="chosenCategoryIconWrap"><span id="chosenCategoryIcon"></span></span> <span id="chosenCategoryLabel"></span></p>
 
         <div class="amount-row" id="spendAmountRow">
           <span class="amount-currency">RM</span>

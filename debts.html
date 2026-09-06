@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#000000" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="stylesheet" href="style.css" />
+<title>QS Wallet · Debts</title>
+</head>
+<body>
+
+  <header class="topbar">
+    <a href="index.html" class="nav-back">‹ Back</a>
+    <span class="wordmark">Debts</span>
+    <span class="topnav-spacer"></span>
+  </header>
+
+  <main class="debts-page">
+    <div class="debt-net">
+      <p class="debt-net-number" id="netNumber">RM —</p>
+      <p class="debt-net-label" id="netLabel">Net position</p>
+    </div>
+
+    <h2 class="section-title">Owed to you</h2>
+    <ul class="grouped-list" id="owedList"></ul>
+
+    <h2 class="section-title">You owe</h2>
+    <ul class="grouped-list" id="oweList"></ul>
+  </main>
+
+  <button class="fab" id="openAddDebt" title="Add debt">+</button>
+
+  <!-- ADD DEBT SHEET -->
+  <div class="sheet-overlay" id="addDebtOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span>New debt</span>
+        <button class="sheet-close" id="addDebtClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="direction-toggle">
+          <button type="button" class="pill selected" data-direction="owed_to_me">Owed to me</button>
+          <button type="button" class="pill" data-direction="i_owe">I owe</button>
+        </div>
+
+        <label class="field-label">Person</label>
+        <input type="text" id="debtPerson" class="text-input" placeholder="e.g. Father, Ah Meng" />
+
+        <div class="amount-row">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="debtAmount" placeholder="0.00" />
+        </div>
+
+        <label class="field-label">Note (optional)</label>
+        <input type="text" id="debtNote" class="text-input" placeholder="What's this for?" />
+
+        <button class="btn-confirm" id="confirmAddDebt">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEBT ACTION SHEET (tap a row) -->
+  <div class="sheet-overlay" id="debtActionOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="debtActionTitle">Person</span>
+        <button class="sheet-close" id="debtActionClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <p class="amount-context" id="debtActionBalance"></p>
+        <button class="btn-confirm" id="openRecordPayment">Record a payment</button>
+        <button class="btn-secondary" id="deleteDebt">Delete this debt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECORD PAYMENT SHEET -->
+  <div class="sheet-overlay" id="paymentOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="paymentTitle">Record payment</span>
+        <button class="sheet-close" id="paymentClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="amount-row">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="paymentAmount" placeholder="0.00" />
+        </div>
+
+        <label class="field-label" id="paymentAccountLabel">Account</label>
+        <div class="pill-row" id="paymentAccountPills"></div>
+
+        <label class="field-label">Date</label>
+        <div class="pill-row" id="paymentDatePills">
+          <button type="button" class="pill" data-date="today">Today</button>
+          <button type="button" class="pill" data-date="yesterday">Yesterday</button>
+          <button type="button" class="pill" data-date="other">Other…</button>
+        </div>
+        <div class="date-input-wrap hidden" id="paymentDateWrap">
+          <input type="date" class="date-input" id="paymentDate" />
+        </div>
+
+        <button class="btn-confirm" id="confirmPayment">Confirm payment</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="debts.js"></script>
+</body>
+</html>

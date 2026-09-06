@@ -1,4 +1,4 @@
-import { supabase, money, todayISO, defaultPeriod } from "./db.js";
+import { supabase, money, todayISO, defaultPeriod, colorFor, animateNumber } from "./db.js";
 
 let accountsCache = [];
 let categoriesCache = [];
@@ -21,6 +21,17 @@ async function loadDashboard() {
   });
   await loadBalances();
   await loadRecent();
+  await loadDebtsSummary();
+}
+
+async function loadDebtsSummary() {
+  const { data, error } = await supabase.from("debts").select("direction, balance");
+  if (error) { console.error(error); return; }
+  const owedToYou = data.filter((d) => d.direction === "owed_to_me").reduce((s, d) => s + Number(d.balance), 0);
+  const youOwe = data.filter((d) => d.direction === "i_owe").reduce((s, d) => s + Number(d.balance), 0);
+  const el = document.getElementById("debtsSummary");
+  if (owedToYou === 0 && youOwe === 0) { el.innerHTML = ""; return; }
+  el.innerHTML = `<a href="debts.html">🤝 Owed to you: <b class="owed-to-you">${money(owedToYou)}</b> · You owe: <b class="you-owe">${money(youOwe)}</b></a>`;
 }
 
 async function loadBalances() {
@@ -35,7 +46,9 @@ async function loadBalances() {
   const bank = data.find((a) => a.name === "Bank");
   const tng = data.find((a) => a.name === "TNG Wallet");
   const available = (Number(bank?.balance) || 0) + (Number(tng?.balance) || 0);
-  document.getElementById("availableAmount").textContent = money(available);
+  const heroEl = document.getElementById("availableAmount");
+  heroEl.classList.toggle("negative", available < 0);
+  animateNumber(heroEl, available);
 
   const defaultAccountId = (tng || data[0])?.id || null;
   spendState.accountId = defaultAccountId;
@@ -126,8 +139,8 @@ async function loadCategories() {
 function renderCategoryGrid(list) {
   document.getElementById("categoryGrid").innerHTML = list
     .map((c) => `<button class="category-btn" data-id="${c.id}" data-name="${c.name}" data-icon="${c.icon || "🏷️"}">
-        <span class="cat-icon">${c.icon || "🏷️"}</span>
-        <span>${c.name}</span>
+        <span class="category-tile" style="background:${colorFor(c.name)}33">${c.icon || "🏷️"}</span>
+        <span class="cat-label">${c.name}</span>
       </button>`)
     .join("");
 }
@@ -149,11 +162,12 @@ function recentRowHTML(t) {
   const isIncome = t.type === "income";
   const label = isIncome ? (t.source || "Income") : (t.categories?.name || "Expense");
   const icon = isIncome ? "💰" : (t.categories?.icon || "🏷️");
+  const tint = isIncome ? "#30D15833" : colorFor(label) + "33";
   const sign = isIncome ? "+" : "-";
   const period = t.time_period ? ` · ${t.time_period}` : "";
   return `<li>
     <span class="recent-left">
-      <span class="recent-icon">${icon}</span>
+      <span class="recent-icon" style="background:${tint}">${icon}</span>
       <span>
         <div class="recent-cat">${label}</div>
         <div class="recent-meta">${t.accounts?.name || ""} · ${t.date}${period}</div>
@@ -215,6 +229,7 @@ document.getElementById("categoryGrid").addEventListener("click", (e) => {
     chosenCategoryId = id;
     document.getElementById("chosenCategoryLabel").textContent = name;
     document.getElementById("chosenCategoryIcon").textContent = icon;
+    document.getElementById("chosenCategoryIconWrap").style.background = colorFor(name) + "33";
     categoryStep.classList.add("hidden");
     amountStep.classList.remove("hidden");
     resetDatePills("spend", spendState);

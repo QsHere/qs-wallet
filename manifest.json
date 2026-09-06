@@ -3,8 +3,8 @@
   "short_name": "QS Wallet",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#1B2E2B",
-  "theme_color": "#1B2E2B",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "portrait",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },

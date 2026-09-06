@@ -1,4 +1,4 @@
-import { supabase, money } from "./db.js";
+import { supabase, money, colorFor } from "./db.js";
 
 let transactions = [];
 let editingId = null;
@@ -39,11 +39,12 @@ function rowHTML(t) {
   const isIncome = t.type === "income";
   const label = isIncome ? (t.source || "Income") : (t.categories?.name || "Expense");
   const icon = isIncome ? "💰" : (t.categories?.icon || "🏷️");
+  const tint = isIncome ? "#30D15833" : colorFor(label) + "33";
   const sign = isIncome ? "+" : "-";
   const period = t.time_period ? ` · ${t.time_period}` : "";
   return `<li class="tappable" data-id="${t.id}">
     <span class="recent-left">
-      <span class="recent-icon">${icon}</span>
+      <span class="recent-icon" style="background:${tint}">${icon}</span>
       <span>
         <div class="recent-cat">${label}</div>
         <div class="recent-meta">${t.accounts?.name || ""}${period}</div>
