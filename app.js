@@ -289,14 +289,6 @@ document.getElementById("detailDelete").addEventListener("click", async () => {
   await loadDashboard();
 });
 
-// ---------- MENU SHEET ----------
-document.getElementById("openMenu").addEventListener("click", () => {
-  document.getElementById("menuOverlay").classList.add("open");
-});
-document.getElementById("menuOverlay").addEventListener("click", (e) => {
-  if (e.target.id === "menuOverlay") document.getElementById("menuOverlay").classList.remove("open");
-});
-
 // ---------- SPEND FLOW ----------
 const spendOverlay = document.getElementById("spendOverlay");
 const categoryStep = document.getElementById("spendCategoryStep");
