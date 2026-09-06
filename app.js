@@ -58,24 +58,19 @@ async function loadCategories() {
   document.getElementById("categoryGrid").innerHTML = topLevel
     .map((c) => `<button class="category-btn" data-id="${c.id}" data-name="${c.name}">${c.name}</button>`)
     .join("");
-
-  const incomeCategorySelect = document.getElementById("incomeCategory");
-  incomeCategorySelect.innerHTML =
-    `<option value="">(none)</option>` +
-    data.map((c) => `<option value="${c.id}">${c.name}</option>`).join("");
 }
 
 async function loadRecent() {
   const { data, error } = await supabase
     .from("transactions")
-    .select("id, date, time_period, type, amount, accounts(name), categories(name)")
+    .select("id, date, time_period, type, amount, source, accounts(name), categories(name)")
     .order("created_at", { ascending: false })
     .limit(6);
   if (error) { console.error(error); return; }
 
   document.getElementById("recentList").innerHTML = data
     .map((t) => {
-      const label = t.categories?.name || (t.type === "income" ? "Income" : "Expense");
+      const label = t.type === "income" ? (t.source || "Income") : (t.categories?.name || "Expense");
       const sign = t.type === "expense" ? "-" : "+";
       const period = t.time_period ? ` · ${t.time_period}` : "";
       return `<li>
@@ -176,7 +171,7 @@ document.getElementById("incomeClose").addEventListener("click", () => {
 document.getElementById("confirmIncome").addEventListener("click", async () => {
   const amount = parseFloat(document.getElementById("incomeAmount").value);
   const accountId = document.getElementById("incomeAccount").value;
-  const categoryId = document.getElementById("incomeCategory").value || null;
+  const source = document.getElementById("incomeSource").value.trim() || null;
   const date = document.getElementById("incomeDate").value || todayISO();
   const timePeriod = document.getElementById("incomePeriod").value;
   if (!amount || amount <= 0) return;
@@ -187,7 +182,7 @@ document.getElementById("confirmIncome").addEventListener("click", async () => {
     type: "income",
     amount,
     account_id: accountId,
-    category_id: categoryId,
+    source,
   });
 
   const account = accountsCache.find((a) => a.id === accountId);
@@ -195,6 +190,7 @@ document.getElementById("confirmIncome").addEventListener("click", async () => {
 
   document.getElementById("incomeOverlay").classList.remove("open");
   document.getElementById("incomeAmount").value = "";
+  document.getElementById("incomeSource").value = "";
   await loadDashboard();
 });
 
