@@ -4,6 +4,15 @@ let accountsCache = [];
 let categoriesCache = [];
 let chosenCategoryId = null;
 
+const spendState = { accountId: null, date: todayISO(), period: defaultPeriod() };
+const incomeState = { accountId: null, date: todayISO(), period: defaultPeriod() };
+
+function yesterdayISO() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 async function loadDashboard() {
   document.getElementById("todayDate").textContent = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
@@ -23,66 +32,144 @@ async function loadBalances() {
     .map((a) => `<span>${a.name}: <b>${money(a.balance)}</b></span>`)
     .join("");
 
-  // "Available to spend" = Bank + TNG only (Cash held out on purpose for now).
   const bank = data.find((a) => a.name === "Bank");
   const tng = data.find((a) => a.name === "TNG Wallet");
   const available = (Number(bank?.balance) || 0) + (Number(tng?.balance) || 0);
   document.getElementById("availableAmount").textContent = money(available);
 
-  populateAccountSelects();
+  const defaultAccountId = (tng || data[0])?.id || null;
+  spendState.accountId = defaultAccountId;
+  incomeState.accountId = defaultAccountId;
+  renderAccountPills("spendAccountPills", spendState);
+  renderAccountPills("incomeAccountPills", incomeState);
 }
 
-function populateAccountSelects() {
-  const options = accountsCache
-    .map((a) => `<option value="${a.id}">${a.name}</option>`)
+function renderAccountPills(containerId, state) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = accountsCache
+    .map((a) => `<button type="button" class="pill ${a.id === state.accountId ? "selected" : ""}" data-account="${a.id}">${a.name}</button>`)
     .join("");
-  const spendSelect = document.getElementById("spendAccount");
-  const incomeSelect = document.getElementById("incomeAccount");
-  spendSelect.innerHTML = options;
-  incomeSelect.innerHTML = options;
+  container.querySelectorAll(".pill").forEach((pill) => {
+    pill.addEventListener("click", () => {
+      container.querySelectorAll(".pill").forEach((p) => p.classList.remove("selected"));
+      pill.classList.add("selected");
+      state.accountId = pill.dataset.account;
+    });
+  });
+}
 
-  // Default "From" / "To" to TNG Wallet if it exists.
-  const tng = accountsCache.find((a) => a.name === "TNG Wallet");
-  if (tng) {
-    spendSelect.value = tng.id;
-    incomeSelect.value = tng.id;
-  }
+// ---------- Date pills (Today / Yesterday / Other…) — wired once, reset on open ----------
+function initDatePills(prefix, state) {
+  const pillsContainer = document.getElementById(`${prefix}DatePills`);
+  const wrap = document.getElementById(`${prefix}DateWrap`);
+  const input = document.getElementById(`${prefix}Date`);
+  const pills = pillsContainer.querySelectorAll(".pill");
+
+  pills.forEach((pill) => {
+    pill.addEventListener("click", () => {
+      pills.forEach((p) => p.classList.remove("selected"));
+      pill.classList.add("selected");
+      if (pill.dataset.date === "today") {
+        state.date = todayISO();
+        wrap.classList.add("hidden");
+      } else if (pill.dataset.date === "yesterday") {
+        state.date = yesterdayISO();
+        wrap.classList.add("hidden");
+      } else {
+        wrap.classList.remove("hidden");
+        input.value = state.date;
+        input.focus();
+      }
+    });
+  });
+
+  input.addEventListener("change", () => { state.date = input.value; });
+}
+
+function resetDatePills(prefix, state) {
+  const pillsContainer = document.getElementById(`${prefix}DatePills`);
+  const wrap = document.getElementById(`${prefix}DateWrap`);
+  const pills = pillsContainer.querySelectorAll(".pill");
+  pills.forEach((p) => p.classList.remove("selected"));
+  pills[0].classList.add("selected"); // "Today"
+  wrap.classList.add("hidden");
+  state.date = todayISO();
+}
+
+function initPeriodPills(prefix, state) {
+  const container = document.getElementById(`${prefix}PeriodPills`);
+  const pills = container.querySelectorAll(".pill");
+  pills.forEach((pill) => {
+    pill.addEventListener("click", () => {
+      pills.forEach((p) => p.classList.remove("selected"));
+      pill.classList.add("selected");
+      state.period = pill.dataset.period;
+    });
+  });
+}
+
+function resetPeriodPills(prefix, state) {
+  const container = document.getElementById(`${prefix}PeriodPills`);
+  const pills = container.querySelectorAll(".pill");
+  const value = defaultPeriod();
+  state.period = value;
+  pills.forEach((p) => p.classList.toggle("selected", p.dataset.period === value));
 }
 
 async function loadCategories() {
   const { data, error } = await supabase.from("categories").select("*").order("name");
   if (error) { console.error(error); return; }
   categoriesCache = data;
+  renderCategoryGrid(data.filter((c) => !c.parent_id));
+}
 
-  const topLevel = data.filter((c) => !c.parent_id);
-  document.getElementById("categoryGrid").innerHTML = topLevel
-    .map((c) => `<button class="category-btn" data-id="${c.id}" data-name="${c.name}">${c.name}</button>`)
+function renderCategoryGrid(list) {
+  document.getElementById("categoryGrid").innerHTML = list
+    .map((c) => `<button class="category-btn" data-id="${c.id}" data-name="${c.name}" data-icon="${c.icon || "🏷️"}">
+        <span class="cat-icon">${c.icon || "🏷️"}</span>
+        <span>${c.name}</span>
+      </button>`)
     .join("");
 }
 
 async function loadRecent() {
   const { data, error } = await supabase
     .from("transactions")
-    .select("id, date, time_period, type, amount, source, accounts(name), categories(name)")
+    .select("id, date, time_period, type, amount, source, accounts(name), categories(name, icon)")
     .order("created_at", { ascending: false })
     .limit(6);
   if (error) { console.error(error); return; }
 
-  document.getElementById("recentList").innerHTML = data
-    .map((t) => {
-      const label = t.type === "income" ? (t.source || "Income") : (t.categories?.name || "Expense");
-      const sign = t.type === "expense" ? "-" : "+";
-      const period = t.time_period ? ` · ${t.time_period}` : "";
-      return `<li>
-        <span>
-          <div class="recent-cat">${label}</div>
-          <div class="recent-meta">${t.accounts?.name || ""} · ${t.date}${period}</div>
-        </span>
-        <span class="recent-amt ${t.type}">${sign}${money(t.amount)}</span>
-      </li>`;
-    })
-    .join("");
+  document.getElementById("recentList").innerHTML = data.length
+    ? data.map(recentRowHTML).join("")
+    : `<li class="empty-note">No transactions yet — tap Spend or Income to add one.</li>`;
 }
+
+function recentRowHTML(t) {
+  const isIncome = t.type === "income";
+  const label = isIncome ? (t.source || "Income") : (t.categories?.name || "Expense");
+  const icon = isIncome ? "💰" : (t.categories?.icon || "🏷️");
+  const sign = isIncome ? "+" : "-";
+  const period = t.time_period ? ` · ${t.time_period}` : "";
+  return `<li>
+    <span class="recent-left">
+      <span class="recent-icon">${icon}</span>
+      <span>
+        <div class="recent-cat">${label}</div>
+        <div class="recent-meta">${t.accounts?.name || ""} · ${t.date}${period}</div>
+      </span>
+    </span>
+    <span class="recent-amt ${t.type}">${sign}${money(t.amount)}</span>
+  </li>`;
+}
+
+// ---------- MENU SHEET ----------
+document.getElementById("openMenu").addEventListener("click", () => {
+  document.getElementById("menuOverlay").classList.add("open");
+});
+document.getElementById("menuOverlay").addEventListener("click", (e) => {
+  if (e.target.id === "menuOverlay") document.getElementById("menuOverlay").classList.remove("open");
+});
 
 // ---------- SPEND FLOW ----------
 const spendOverlay = document.getElementById("spendOverlay");
@@ -91,14 +178,16 @@ const amountStep = document.getElementById("spendAmountStep");
 const spendBack = document.getElementById("spendBack");
 const spendStepTitle = document.getElementById("spendStepTitle");
 
-document.getElementById("openSpend").addEventListener("click", () => {
+function openSpendFlow() {
   categoryStep.classList.remove("hidden");
   amountStep.classList.add("hidden");
   spendBack.style.visibility = "hidden";
   spendStepTitle.textContent = "Pick a category";
   spendOverlay.classList.add("open");
-  loadCategories(); // reset grid back to top-level each time it opens
-});
+  renderCategoryGrid(categoriesCache.filter((c) => !c.parent_id));
+}
+
+document.getElementById("openSpend").addEventListener("click", openSpendFlow);
 
 document.getElementById("spendClose").addEventListener("click", () => {
   spendOverlay.classList.remove("open");
@@ -110,38 +199,37 @@ document.getElementById("categoryGrid").addEventListener("click", (e) => {
   if (!btn) return;
   const id = btn.dataset.id;
   const name = btn.dataset.name;
+  const icon = btn.dataset.icon;
   const children = categoriesCache.filter((c) => c.parent_id === id);
 
   if (children.length > 0) {
-    document.getElementById("categoryGrid").innerHTML = children
-      .map((c) => `<button class="category-btn" data-id="${c.id}" data-name="${c.name}">${c.name}</button>`)
-      .join("");
+    renderCategoryGrid(children);
     spendStepTitle.textContent = name;
     spendBack.style.visibility = "visible";
-    spendBack.onclick = () => loadCategories().then(() => {
+    spendBack.onclick = () => {
+      renderCategoryGrid(categoriesCache.filter((c) => !c.parent_id));
       spendStepTitle.textContent = "Pick a category";
       spendBack.style.visibility = "hidden";
-    });
+    };
   } else {
     chosenCategoryId = id;
     document.getElementById("chosenCategoryLabel").textContent = name;
-    document.getElementById("spendDate").value = todayISO();
-    document.getElementById("spendPeriod").value = defaultPeriod();
+    document.getElementById("chosenCategoryIcon").textContent = icon;
     categoryStep.classList.add("hidden");
     amountStep.classList.remove("hidden");
+    resetDatePills("spend", spendState);
+    resetPeriodPills("spend", spendState);
   }
 });
 
 document.getElementById("confirmSpend").addEventListener("click", async () => {
   const amount = parseFloat(document.getElementById("spendAmount").value);
-  const accountId = document.getElementById("spendAccount").value;
-  const date = document.getElementById("spendDate").value || todayISO();
-  const timePeriod = document.getElementById("spendPeriod").value;
   if (!amount || amount <= 0) return;
+  const accountId = spendState.accountId;
 
   await supabase.from("transactions").insert({
-    date,
-    time_period: timePeriod,
+    date: spendState.date,
+    time_period: spendState.period,
     type: "expense",
     amount,
     account_id: accountId,
@@ -157,11 +245,13 @@ document.getElementById("confirmSpend").addEventListener("click", async () => {
 });
 
 // ---------- INCOME FLOW ----------
-document.getElementById("openIncome").addEventListener("click", () => {
-  document.getElementById("incomeDate").value = todayISO();
-  document.getElementById("incomePeriod").value = defaultPeriod();
+function openIncomeFlow() {
   document.getElementById("incomeOverlay").classList.add("open");
-});
+  resetDatePills("income", incomeState);
+  resetPeriodPills("income", incomeState);
+}
+
+document.getElementById("openIncome").addEventListener("click", openIncomeFlow);
 
 document.getElementById("incomeClose").addEventListener("click", () => {
   document.getElementById("incomeOverlay").classList.remove("open");
@@ -170,15 +260,13 @@ document.getElementById("incomeClose").addEventListener("click", () => {
 
 document.getElementById("confirmIncome").addEventListener("click", async () => {
   const amount = parseFloat(document.getElementById("incomeAmount").value);
-  const accountId = document.getElementById("incomeAccount").value;
-  const source = document.getElementById("incomeSource").value.trim() || null;
-  const date = document.getElementById("incomeDate").value || todayISO();
-  const timePeriod = document.getElementById("incomePeriod").value;
   if (!amount || amount <= 0) return;
+  const accountId = incomeState.accountId;
+  const source = document.getElementById("incomeSource").value.trim() || null;
 
   await supabase.from("transactions").insert({
-    date,
-    time_period: timePeriod,
+    date: incomeState.date,
+    time_period: incomeState.period,
     type: "income",
     amount,
     account_id: accountId,
@@ -196,8 +284,18 @@ document.getElementById("confirmIncome").addEventListener("click", async () => {
 
 // ---------- INIT ----------
 (async function init() {
+  initDatePills("spend", spendState);
+  initPeriodPills("spend", spendState);
+  initDatePills("income", incomeState);
+  initPeriodPills("income", incomeState);
+
   await loadCategories();
   await loadDashboard();
+
+  // PWA app-shortcut deep links: index.html?action=spend / ?action=income
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("action") === "spend") openSpendFlow();
+  if (params.get("action") === "income") openIncomeFlow();
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(console.error);

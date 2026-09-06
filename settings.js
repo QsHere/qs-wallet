@@ -18,15 +18,16 @@ function renderNode(cat) {
   return `
     <li class="tree-item">
       <div class="tree-row">
-        <span class="tree-name">${cat.name}</span>
+        <span class="tree-name"><span class="cat-icon">${cat.icon || "🏷️"}</span>${cat.name}</span>
         <span class="tree-actions">
           <button class="tree-btn" data-add="${cat.id}">+ sub</button>
           <button class="tree-btn danger" data-del="${cat.id}">Delete</button>
         </span>
       </div>
       <div class="inline-add hidden" id="add-${cat.id}">
-        <input type="text" placeholder="Subcategory name" class="amount-input small-input" id="input-${cat.id}" />
-        <button class="btn btn-confirm small-btn" data-confirm="${cat.id}">Add</button>
+        <input type="text" placeholder="🏷️" class="text-input icon-input" id="icon-${cat.id}" maxlength="4" />
+        <input type="text" placeholder="Subcategory name" class="text-input" id="input-${cat.id}" />
+        <button class="small-btn btn-confirm" data-confirm="${cat.id}">Add</button>
       </div>
       ${kids.length ? `<ul class="tree-children">${kids.map(renderNode).join("")}</ul>` : ""}
     </li>
@@ -62,21 +63,26 @@ document.getElementById("categoryTree").addEventListener("click", async (e) => {
 
   if (confirmBtn) {
     const id = confirmBtn.dataset.confirm;
-    const input = document.getElementById(`input-${id}`);
-    const name = input.value.trim();
+    const nameInput = document.getElementById(`input-${id}`);
+    const iconInput = document.getElementById(`icon-${id}`);
+    const name = nameInput.value.trim();
+    const icon = iconInput.value.trim() || "🏷️";
     if (name) {
-      await supabase.from("categories").insert({ name, parent_id: id });
+      await supabase.from("categories").insert({ name, icon, parent_id: id });
       await loadTree();
     }
   }
 });
 
 document.getElementById("addTopCategory").addEventListener("click", async () => {
-  const input = document.getElementById("newTopCategory");
-  const name = input.value.trim();
+  const nameInput = document.getElementById("newTopCategory");
+  const iconInput = document.getElementById("newTopIcon");
+  const name = nameInput.value.trim();
+  const icon = iconInput.value.trim() || "🏷️";
   if (!name) return;
-  await supabase.from("categories").insert({ name, parent_id: null });
-  input.value = "";
+  await supabase.from("categories").insert({ name, icon, parent_id: null });
+  nameInput.value = "";
+  iconInput.value = "";
   await loadTree();
 });
 

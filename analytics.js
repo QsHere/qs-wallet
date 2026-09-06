@@ -41,6 +41,7 @@ async function loadChart() {
   const values = Object.values(totals);
   const colors = labels.map((_, i) => PALETTE[i % PALETTE.length]);
   const total = values.reduce((a, b) => a + b, 0);
+  document.getElementById("totalAmount").textContent = money(total);
 
   if (chart) chart.destroy();
   const ctx = document.getElementById("pieChart").getContext("2d");

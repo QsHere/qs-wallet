@@ -21,13 +21,12 @@
 
   <main class="settings-page">
     <div class="add-row">
-      <input type="text" id="newTopCategory" placeholder="New top-level category" class="amount-input small-input" />
-      <button class="btn btn-confirm small-btn" id="addTopCategory">Add</button>
+      <input type="text" id="newTopIcon" class="text-input icon-input" placeholder="🏷️" maxlength="4" />
+      <input type="text" id="newTopCategory" placeholder="New top-level category" class="text-input" />
+      <button class="small-btn btn-confirm" id="addTopCategory">Add</button>
     </div>
 
-    <ul class="category-tree" id="categoryTree">
-      <!-- filled by settings.js -->
-    </ul>
+    <ul class="category-tree" id="categoryTree"></ul>
   </main>
 
   <script type="module" src="settings.js"></script>

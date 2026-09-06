@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#1B2E2B" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<title>QS Wallet · History</title>
+</head>
+<body>
+
+  <header class="topbar">
+    <a href="index.html" class="nav-back">‹ Back</a>
+    <span class="wordmark">History</span>
+    <span class="topnav-spacer"></span>
+  </header>
+
+  <main class="history-page">
+    <div id="historyList"></div>
+  </main>
+
+  <!-- EDIT / DELETE SHEET -->
+  <div class="sheet-overlay" id="editOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="editLabel">Transaction</span>
+        <button class="sheet-close" id="editClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="amount-row">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="editAmount" />
+        </div>
+        <button class="btn-confirm" id="saveEdit">Save changes</button>
+        <button class="btn-secondary" id="deleteEntry">Delete this transaction</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="history.js"></script>
+</body>
+</html>

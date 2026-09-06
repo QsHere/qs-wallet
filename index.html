@@ -15,11 +15,8 @@
 <body>
 
   <header class="topbar">
-    <span class="wordmark">QS Wallet</span>
-    <nav class="topnav">
-      <a href="analytics.html" title="Spending breakdown">Analytics</a>
-      <a href="settings.html" title="Manage categories">Categories</a>
-    </nav>
+    <span class="wordmark"><span class="mark">Q</span>QS Wallet</span>
+    <button class="icon-btn" id="openMenu" title="Menu">⋯</button>
   </header>
 
   <main class="dashboard">
@@ -31,26 +28,35 @@
 
     <div class="divider"></div>
 
-    <section class="balances" id="balances">
-      <!-- filled by app.js -->
-    </section>
+    <section class="balances" id="balances"></section>
 
     <section class="actions">
-      <button class="btn btn-spend" id="openSpend">– Spend</button>
-      <button class="btn btn-income" id="openIncome">+ Income</button>
+      <button class="btn btn-spend" id="openSpend"><span>–</span> Spend</button>
+      <button class="btn btn-income" id="openIncome"><span>+</span> Income</button>
     </section>
 
     <section class="recent">
-      <h2 class="recent-title">Recent</h2>
-      <ul class="recent-list" id="recentList">
-        <!-- filled by app.js -->
-      </ul>
+      <h2 class="recent-title"><span>Recent</span> <a href="history.html">See all</a></h2>
+      <ul class="recent-list" id="recentList"></ul>
     </section>
   </main>
+
+  <!-- MENU SHEET -->
+  <div class="sheet-overlay" id="menuOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <ul class="menu-list">
+        <li><a href="history.html"><span class="menu-icon">📜</span> History</a></li>
+        <li><a href="analytics.html"><span class="menu-icon">📊</span> Analytics</a></li>
+        <li><a href="settings.html"><span class="menu-icon">🏷️</span> Categories</a></li>
+      </ul>
+    </div>
+  </div>
 
   <!-- SPEND FLOW MODAL -->
   <div class="sheet-overlay" id="spendOverlay">
     <div class="sheet">
+      <div class="sheet-handle"></div>
       <div class="sheet-header">
         <button class="sheet-back" id="spendBack" style="visibility:hidden;">Back</button>
         <span id="spendStepTitle">Pick a category</span>
@@ -58,28 +64,39 @@
       </div>
 
       <div class="sheet-body" id="spendCategoryStep">
-        <div class="category-grid" id="categoryGrid"><!-- filled by app.js --></div>
+        <div class="category-grid" id="categoryGrid"></div>
       </div>
 
       <div class="sheet-body hidden" id="spendAmountStep">
-        <p class="amount-context" id="chosenCategoryLabel"></p>
-        <input type="number" inputmode="decimal" class="amount-input" id="spendAmount" placeholder="0.00" />
+        <p class="amount-context"><span class="cat-icon" id="chosenCategoryIcon"></span> <span id="chosenCategoryLabel"></span></p>
 
-        <label class="field-label" for="spendAccount">From</label>
-        <select id="spendAccount" class="account-select"><!-- filled by app.js --></select>
+        <div class="amount-row" id="spendAmountRow">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="spendAmount" placeholder="0.00" />
+        </div>
 
-        <label class="field-label" for="spendDate">Date</label>
-        <input type="date" id="spendDate" class="account-select" />
+        <label class="field-label">From</label>
+        <div class="pill-row" id="spendAccountPills"></div>
 
-        <label class="field-label" for="spendPeriod">Time of day</label>
-        <select id="spendPeriod" class="account-select">
-          <option value="morning">Morning</option>
-          <option value="noon">Noon</option>
-          <option value="night">Night</option>
-          <option value="midnight">Midnight</option>
-        </select>
+        <label class="field-label">Date</label>
+        <div class="pill-row" id="spendDatePills">
+          <button type="button" class="pill" data-date="today">Today</button>
+          <button type="button" class="pill" data-date="yesterday">Yesterday</button>
+          <button type="button" class="pill" data-date="other">Other…</button>
+        </div>
+        <div class="date-input-wrap hidden" id="spendDateWrap">
+          <input type="date" class="date-input" id="spendDate" />
+        </div>
 
-        <button class="btn btn-confirm" id="confirmSpend">Confirm</button>
+        <label class="field-label">Time of day</label>
+        <div class="pill-row" id="spendPeriodPills">
+          <button type="button" class="pill" data-period="morning"><span class="pill-icon">🌅</span> Morning</button>
+          <button type="button" class="pill" data-period="noon"><span class="pill-icon">☀️</span> Noon</button>
+          <button type="button" class="pill" data-period="night"><span class="pill-icon">🌙</span> Night</button>
+          <button type="button" class="pill" data-period="midnight"><span class="pill-icon">🌑</span> Midnight</button>
+        </div>
+
+        <button class="btn-confirm" id="confirmSpend">Confirm</button>
       </div>
     </div>
   </div>
@@ -87,32 +104,43 @@
   <!-- INCOME FLOW MODAL -->
   <div class="sheet-overlay" id="incomeOverlay">
     <div class="sheet">
+      <div class="sheet-handle"></div>
       <div class="sheet-header">
         <span></span>
         <span>Add income</span>
         <button class="sheet-close" id="incomeClose">Close</button>
       </div>
       <div class="sheet-body">
-        <input type="number" inputmode="decimal" class="amount-input" id="incomeAmount" placeholder="0.00" />
+        <div class="amount-row" id="incomeAmountRow">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="incomeAmount" placeholder="0.00" />
+        </div>
 
-        <label class="field-label" for="incomeAccount">To</label>
-        <select id="incomeAccount" class="account-select"><!-- filled by app.js --></select>
+        <label class="field-label">To</label>
+        <div class="pill-row" id="incomeAccountPills"></div>
 
-        <label class="field-label" for="incomeSource">Source (optional)</label>
-        <input type="text" id="incomeSource" class="account-select" placeholder="e.g. Father's business" />
+        <label class="field-label">Source (optional)</label>
+        <input type="text" id="incomeSource" class="text-input" placeholder="e.g. Father's business, Salary" />
 
-        <label class="field-label" for="incomeDate">Date</label>
-        <input type="date" id="incomeDate" class="account-select" />
+        <label class="field-label">Date</label>
+        <div class="pill-row" id="incomeDatePills">
+          <button type="button" class="pill" data-date="today">Today</button>
+          <button type="button" class="pill" data-date="yesterday">Yesterday</button>
+          <button type="button" class="pill" data-date="other">Other…</button>
+        </div>
+        <div class="date-input-wrap hidden" id="incomeDateWrap">
+          <input type="date" class="date-input" id="incomeDate" />
+        </div>
 
-        <label class="field-label" for="incomePeriod">Time of day</label>
-        <select id="incomePeriod" class="account-select">
-          <option value="morning">Morning</option>
-          <option value="noon">Noon</option>
-          <option value="night">Night</option>
-          <option value="midnight">Midnight</option>
-        </select>
+        <label class="field-label">Time of day</label>
+        <div class="pill-row" id="incomePeriodPills">
+          <button type="button" class="pill" data-period="morning"><span class="pill-icon">🌅</span> Morning</button>
+          <button type="button" class="pill" data-period="noon"><span class="pill-icon">☀️</span> Noon</button>
+          <button type="button" class="pill" data-period="night"><span class="pill-icon">🌙</span> Night</button>
+          <button type="button" class="pill" data-period="midnight"><span class="pill-icon">🌑</span> Midnight</button>
+        </div>
 
-        <button class="btn btn-confirm" id="confirmIncome">Confirm</button>
+        <button class="btn-confirm" id="confirmIncome">Confirm</button>
       </div>
     </div>
   </div>

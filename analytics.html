@@ -25,13 +25,14 @@
       <button class="toggle-btn" id="btnMonth">This month</button>
     </div>
 
+    <p class="analytics-total" id="totalAmount">RM —</p>
+    <p class="analytics-total-label">Total spent</p>
+
     <div class="chart-wrap">
-      <canvas id="pieChart" width="320" height="320"></canvas>
+      <canvas id="pieChart" width="280" height="280"></canvas>
     </div>
 
-    <ul class="legend-list" id="legendList">
-      <!-- filled by analytics.js -->
-    </ul>
+    <ul class="legend-list" id="legendList"></ul>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
