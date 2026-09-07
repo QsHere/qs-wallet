@@ -12,22 +12,22 @@
 </head>
 <body>
 
-  <header class="topbar">
-    <span class="page-title">QS Wallet</span>
-  </header>
-
   <main class="dashboard">
+    <section class="greeting">
+      <p class="greeting-text" id="greetingText">Hello</p>
+      <p class="greeting-date" id="todayDate">—</p>
+    </section>
+
     <section class="hero">
-      <p class="hero-label">
-        Available to spend
+      <div class="hero-label-row">
+        <span class="hero-label">Available to spend</span>
         <button class="eye-btn" id="toggleVisibility" title="Show/hide">
           <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>
           </svg>
         </button>
-      </p>
+      </div>
       <p class="hero-number" id="availableAmount">RM —</p>
-      <p class="hero-caption" id="todayDate">—</p>
     </section>
 
     <button class="collapse-toggle" id="toggleAccounts">
@@ -78,10 +78,6 @@
     </nav>
   </div>
 
-  <script type="module" src="app.js"></script>
-</body>
-</html>
-
   <!-- SPEND FLOW MODAL -->
   <div class="sheet-overlay" id="spendOverlay">
     <div class="sheet">
@@ -93,6 +89,7 @@
       </div>
 
       <div class="sheet-body" id="spendCategoryStep">
+        <div class="frequent-row" id="frequentRow"></div>
         <div class="category-grid" id="categoryGrid"></div>
       </div>
 
@@ -207,9 +204,13 @@
           <label class="field-label">Date</label>
           <input type="date" class="date-input" id="detailEditDate" />
         </div>
+        <div class="hidden" id="detailEditNoteWrap">
+          <label class="field-label">Note</label>
+          <input type="text" class="text-input" id="detailEditNote" placeholder="Add a note" />
+        </div>
 
         <button class="btn-confirm hidden" id="detailSaveEdit">Save changes</button>
-        <button class="btn-secondary" id="detailEditToggle" style="color:var(--blue); background:var(--bg-elevated-2);">Edit amount or date</button>
+        <button class="btn-secondary" id="detailEditToggle" style="color:var(--blue); background:var(--bg-elevated-2);">Edit details</button>
         <button class="btn-secondary" id="detailDelete">Delete this transaction</button>
       </div>
     </div>

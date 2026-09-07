@@ -11,44 +11,95 @@
 </head>
 <body>
 
-  <header class="topbar">
-    <span class="page-title">History</span>
-  </header>
-
   <main class="history-page">
-    <div id="historyList"></div>
+    <div class="cal-header">
+      <button class="cal-nav" id="prevMonth" aria-label="Previous month">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="cal-month-label" id="monthLabel">Month Year</button>
+      <button class="cal-nav" id="nextMonth" aria-label="Next month">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <div class="cal-weekdays">
+      <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+    </div>
+
+    <div class="cal-grid" id="calGrid"></div>
   </main>
 
-  <!-- TRANSACTION DETAIL SHEET -->
-  <div class="sheet-overlay" id="editOverlay">
+  <!-- MONTH / YEAR PICKER -->
+  <div class="sheet-overlay" id="monthPickerOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span>Jump to month</span>
+        <button class="sheet-close" id="monthPickerClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <label class="field-label">Year</label>
+        <div class="pill-row" id="yearPills"></div>
+        <label class="field-label">Month</label>
+        <div class="pill-row" id="monthPills"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY DETAIL (list of that day's transactions) -->
+  <div class="sheet-overlay" id="dayOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="dayTitle">Date</span>
+        <button class="sheet-close" id="dayClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <ul class="grouped-list" id="dayList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSACTION DETAIL / EDIT SHEET -->
+  <div class="sheet-overlay" id="detailOverlay">
     <div class="sheet">
       <div class="sheet-handle"></div>
       <div class="sheet-header">
         <span></span>
         <span>Transaction</span>
-        <button class="sheet-close" id="editClose">Close</button>
+        <button class="sheet-close" id="detailClose">Close</button>
       </div>
       <div class="sheet-body">
         <div class="detail-header">
           <span class="tile-mini" id="detailIconWrap" style="width:40px;height:40px;border-radius:12px;font-size:20px;"><span id="detailIcon"></span></span>
-          <span class="detail-amount" id="detailAmountLabel"></span>
+          <span class="detail-amount" id="detailAmount"></span>
         </div>
         <div class="detail-rows">
           <div class="detail-row"><span class="k">Category</span><span class="v" id="detailCategory"></span></div>
           <div class="detail-row"><span class="k">Account</span><span class="v" id="detailAccount"></span></div>
+          <div class="detail-row"><span class="k">Date</span><span class="v" id="detailDate"></span></div>
           <div class="detail-row"><span class="k">Time of day</span><span class="v" id="detailPeriod"></span></div>
           <div class="detail-row hidden" id="detailNoteRow"><span class="k">Note</span><span class="v" id="detailNote"></span></div>
         </div>
 
-        <div class="amount-row" id="editAmountRow">
+        <div class="amount-row hidden" id="detailEditRow">
           <span class="amount-currency">RM</span>
-          <input type="number" inputmode="decimal" class="amount-input" id="editAmount" />
+          <input type="number" inputmode="decimal" class="amount-input" id="detailEditAmount" />
         </div>
-        <label class="field-label">Date</label>
-        <input type="date" class="date-input" id="editDate" />
+        <div class="hidden" id="detailEditDateWrap">
+          <label class="field-label">Date</label>
+          <input type="date" class="date-input" id="detailEditDate" />
+        </div>
+        <div class="hidden" id="detailEditNoteWrap">
+          <label class="field-label">Note</label>
+          <input type="text" class="text-input" id="detailEditNote" placeholder="Add a note" />
+        </div>
 
-        <button class="btn-confirm" id="saveEdit">Save changes</button>
-        <button class="btn-secondary" id="deleteEntry">Delete this transaction</button>
+        <button class="btn-confirm hidden" id="detailSaveEdit">Save changes</button>
+        <button class="btn-secondary" id="detailEditToggle" style="color:var(--blue); background:var(--bg-elevated-2);">Edit details</button>
+        <button class="btn-secondary" id="detailDelete">Delete this transaction</button>
       </div>
     </div>
   </div>

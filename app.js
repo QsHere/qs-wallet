@@ -15,7 +15,16 @@ function yesterdayISO() {
   return d.toISOString().slice(0, 10);
 }
 
+function greetingFor() {
+  const h = new Date().getHours();
+  if (h < 5) return "Good night";
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 async function loadDashboard() {
+  document.getElementById("greetingText").textContent = greetingFor();
   document.getElementById("todayDate").textContent = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",
@@ -240,10 +249,12 @@ function openDetail(id) {
 
   document.getElementById("detailEditRow").classList.add("hidden");
   document.getElementById("detailEditDateWrap").classList.add("hidden");
+  document.getElementById("detailEditNoteWrap").classList.add("hidden");
   document.getElementById("detailSaveEdit").classList.add("hidden");
   document.getElementById("detailEditToggle").classList.remove("hidden");
   document.getElementById("detailEditAmount").value = t.amount;
   document.getElementById("detailEditDate").value = t.date;
+  document.getElementById("detailEditNote").value = t.note || "";
 
   document.getElementById("detailOverlay").classList.add("open");
 }
@@ -255,6 +266,7 @@ document.getElementById("detailClose").addEventListener("click", () => {
 document.getElementById("detailEditToggle").addEventListener("click", () => {
   document.getElementById("detailEditRow").classList.remove("hidden");
   document.getElementById("detailEditDateWrap").classList.remove("hidden");
+  document.getElementById("detailEditNoteWrap").classList.remove("hidden");
   document.getElementById("detailSaveEdit").classList.remove("hidden");
   document.getElementById("detailEditToggle").classList.add("hidden");
 });
@@ -263,13 +275,14 @@ document.getElementById("detailSaveEdit").addEventListener("click", async () => 
   const t = recentCache.find((x) => x.id === activeDetailId);
   const newAmount = parseFloat(document.getElementById("detailEditAmount").value);
   const newDate = document.getElementById("detailEditDate").value;
+  const newNote = document.getElementById("detailEditNote").value.trim() || null;
   if (!newAmount || newAmount <= 0 || !newDate) return;
 
   const diff = newAmount - Number(t.amount);
   const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
   const balanceDelta = t.type === "expense" ? -diff : diff;
   await supabase.from("accounts").update({ balance: Number(account.balance) + balanceDelta }).eq("id", t.account_id);
-  await supabase.from("transactions").update({ amount: newAmount, date: newDate }).eq("id", activeDetailId);
+  await supabase.from("transactions").update({ amount: newAmount, date: newDate, note: newNote }).eq("id", activeDetailId);
 
   document.getElementById("detailOverlay").classList.remove("open");
   await loadDashboard();
@@ -296,6 +309,51 @@ const amountStep = document.getElementById("spendAmountStep");
 const spendBack = document.getElementById("spendBack");
 const spendStepTitle = document.getElementById("spendStepTitle");
 
+function selectLeafCategory(id, name, icon) {
+  chosenCategoryId = id;
+  document.getElementById("chosenCategoryLabel").textContent = name;
+  document.getElementById("chosenCategoryIcon").textContent = icon;
+  document.getElementById("chosenCategoryIconWrap").style.background = colorFor(name) + "33";
+  categoryStep.classList.add("hidden");
+  amountStep.classList.remove("hidden");
+  resetDatePills("spend", spendState);
+  resetPeriodPills("spend", spendState);
+}
+
+async function renderFrequentChips() {
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("category_id")
+    .eq("type", "expense")
+    .not("category_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error || !data) { document.getElementById("frequentRow").innerHTML = ""; return; }
+
+  const counts = {};
+  data.forEach((t) => { counts[t.category_id] = (counts[t.category_id] || 0) + 1; });
+
+  const top = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([id]) => categoriesCache.find((c) => c.id === id))
+    .filter(Boolean);
+
+  document.getElementById("frequentRow").innerHTML = top
+    .map((c) => {
+      const parent = categoriesCache.find((p) => p.id === c.parent_id);
+      const label = parent ? `${parent.name} › ${c.name}` : c.name;
+      return `<button type="button" class="frequent-chip" data-id="${c.id}" data-name="${c.name}" data-icon="${c.icon || "🏷️"}">${c.icon || "🏷️"} ${label}</button>`;
+    })
+    .join("");
+}
+
+document.getElementById("frequentRow").addEventListener("click", (e) => {
+  const chip = e.target.closest(".frequent-chip");
+  if (!chip) return;
+  selectLeafCategory(chip.dataset.id, chip.dataset.name, chip.dataset.icon);
+});
+
 function openSpendFlow() {
   categoryStep.classList.remove("hidden");
   amountStep.classList.add("hidden");
@@ -303,6 +361,7 @@ function openSpendFlow() {
   spendStepTitle.textContent = "Pick a category";
   spendOverlay.classList.add("open");
   renderCategoryGrid(categoriesCache.filter((c) => !c.parent_id));
+  renderFrequentChips();
 }
 
 document.getElementById("openSpend").addEventListener("click", openSpendFlow);
@@ -330,14 +389,7 @@ document.getElementById("categoryGrid").addEventListener("click", (e) => {
       spendBack.style.visibility = "hidden";
     };
   } else {
-    chosenCategoryId = id;
-    document.getElementById("chosenCategoryLabel").textContent = name;
-    document.getElementById("chosenCategoryIcon").textContent = icon;
-    document.getElementById("chosenCategoryIconWrap").style.background = colorFor(name) + "33";
-    categoryStep.classList.add("hidden");
-    amountStep.classList.remove("hidden");
-    resetDatePills("spend", spendState);
-    resetPeriodPills("spend", spendState);
+    selectLeafCategory(id, name, icon);
   }
 });
 

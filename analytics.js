@@ -24,17 +24,6 @@ function computeRange(key) {
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return { start: iso(start), end: iso(end) };
   }
-  if (key === "last7") {
-    const end = new Date(now);
-    const start = new Date(now);
-    start.setDate(start.getDate() - 6);
-    return { start: iso(start), end: iso(end) };
-  }
-  // last30
-  const end = new Date(now);
-  const start = new Date(now);
-  start.setDate(start.getDate() - 29);
-  return { start: iso(start), end: iso(end) };
 }
 
 async function loadCategories() {
