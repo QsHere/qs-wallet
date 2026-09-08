@@ -882,13 +882,27 @@ a { -webkit-tap-highlight-color: transparent; }
   padding: max(24px, env(safe-area-inset-top, 24px)) 16px 40px;
   max-width: 480px;
   margin: 0 auto;
+  touch-action: pan-y;
+}
+
+.cal-weekdays {
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .cal-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.cal-swipe-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--label-tertiary);
+  margin: 0 0 18px;
 }
 
 .cal-nav {
@@ -909,10 +923,11 @@ a { -webkit-tap-highlight-color: transparent; }
   background: none;
   border: none;
   color: var(--label);
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 700;
   cursor: pointer;
-  padding: 6px 12px;
+  padding: 6px 14px;
+  text-align: center;
 }
 
 .cal-weekdays {
@@ -930,6 +945,8 @@ a { -webkit-tap-highlight-color: transparent; }
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
   touch-action: pan-y;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .cal-cell {

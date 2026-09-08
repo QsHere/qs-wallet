@@ -5,6 +5,9 @@ let accounts = [];
 let activeDebtId = null;
 let addDirection = "owed_to_me";
 let paymentState = { accountId: null, date: todayISO() };
+let hideAmounts = localStorage.getItem("qs-hide-balance") === "1";
+
+function maskedMoney(v) { return hideAmounts ? "RM ••••" : money(v); }
 
 function yesterdayISO() {
   const d = new Date();
@@ -40,11 +43,21 @@ function render() {
   const totalOwe = owe.reduce((s, d) => s + Number(d.balance), 0);
   const net = totalOwed - totalOwe;
   const netEl = document.getElementById("netNumber");
-  netEl.textContent = money(Math.abs(net));
+  netEl.textContent = maskedMoney(Math.abs(net));
   netEl.classList.toggle("positive", net >= 0);
   netEl.classList.toggle("negative", net < 0);
   document.getElementById("netLabel").textContent = net >= 0 ? "Net: owed to you overall" : "Net: you owe overall";
+
+  document.getElementById("debtEyeIcon").innerHTML = hideAmounts
+    ? `<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.6 21.6 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.6 21.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`
+    : `<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>`;
 }
+
+document.getElementById("toggleDebtVisibility").addEventListener("click", () => {
+  hideAmounts = !hideAmounts;
+  localStorage.setItem("qs-hide-balance", hideAmounts ? "1" : "0");
+  render();
+});
 
 function rowHTML(d, kind) {
   return `<li class="tappable" data-id="${d.id}">
@@ -55,7 +68,7 @@ function rowHTML(d, kind) {
         ${d.note ? `<div class="row-meta">${d.note}</div>` : ""}
       </span>
     </span>
-    <span class="row-amt ${kind}">${money(d.balance)}</span>
+    <span class="row-amt ${kind}">${maskedMoney(d.balance)}</span>
   </li>`;
 }
 
@@ -75,8 +88,42 @@ function openActionSheet(id) {
   const d = debts.find((x) => x.id === id);
   document.getElementById("debtActionTitle").textContent = d.person;
   const label = d.direction === "owed_to_me" ? "owes you" : "you owe";
-  document.getElementById("debtActionBalance").textContent = `${label} ${money(d.balance)}`;
+  document.getElementById("debtActionBalance").textContent = `${label} ${maskedMoney(d.balance)}`;
   document.getElementById("debtActionOverlay").classList.add("open");
+  loadLog(id);
+}
+
+async function loadLog(debtId) {
+  const logEl = document.getElementById("debtLog");
+  logEl.innerHTML = `<li class="empty-note">Loading…</li>`;
+  const { data, error } = await supabase
+    .from("debt_activity")
+    .select("*")
+    .eq("debt_id", debtId)
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) { console.error(error); logEl.innerHTML = `<li class="empty-note">Couldn't load activity.</li>`; return; }
+
+  logEl.innerHTML = data.length
+    ? data.map(logRowHTML).join("")
+    : `<li class="empty-note">No activity logged yet.</li>`;
+}
+
+function logRowHTML(a) {
+  const labels = { payment: "Payment", increase: "Added to balance", created: "Debt created" };
+  const label = labels[a.type] || a.type;
+  const sign = a.type === "payment" ? "-" : "+";
+  const tint = a.type === "payment" ? "#30D15833" : "#0A84FF33";
+  return `<li>
+    <span class="row-left">
+      <span class="row-icon" style="background:${tint}">${a.type === "payment" ? "💸" : "➕"}</span>
+      <span>
+        <div class="row-title">${label}</div>
+        <div class="row-meta">${a.date}</div>
+      </span>
+    </span>
+    <span class="row-amt">${sign}${maskedMoney(a.amount)}</span>
+  </li>`;
 }
 
 document.getElementById("debtActionClose").addEventListener("click", () => {
@@ -142,7 +189,15 @@ document.getElementById("confirmAddDebt").addEventListener("click", async () => 
   const note = document.getElementById("debtNote").value.trim() || null;
   if (!person || !amount || amount <= 0) return;
 
-  await supabase.from("debts").insert({ person, direction: addDirection, balance: amount, note });
+  const { data, error } = await supabase
+    .from("debts")
+    .insert({ person, direction: addDirection, balance: amount, note })
+    .select()
+    .single();
+
+  if (!error && data) {
+    await supabase.from("debt_activity").insert({ debt_id: data.id, date: todayISO(), amount, type: "created" });
+  }
 
   document.getElementById("addDebtOverlay").classList.remove("open");
   document.getElementById("debtPerson").value = "";

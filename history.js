@@ -75,21 +75,27 @@ function goToMonth(y, m) {
   loadMonth();
 }
 
-document.getElementById("prevMonth").addEventListener("click", () => goToMonth(viewYear, viewMonth - 1));
-document.getElementById("nextMonth").addEventListener("click", () => goToMonth(viewYear, viewMonth + 1));
+document.getElementById("prevMonth")?.addEventListener("click", () => goToMonth(viewYear, viewMonth - 1));
+document.getElementById("nextMonth")?.addEventListener("click", () => goToMonth(viewYear, viewMonth + 1));
 
-// Swipe left/right on the grid
+// Swipe left/right anywhere on the calendar page to change month
 let touchStartX = null;
-const grid = document.getElementById("calGrid");
-grid.addEventListener("touchstart", (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
-grid.addEventListener("touchend", (e) => {
+let touchStartY = null;
+const swipeArea = document.querySelector(".history-page");
+swipeArea.addEventListener("touchstart", (e) => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+swipeArea.addEventListener("touchend", (e) => {
   if (touchStartX === null) return;
   const deltaX = e.changedTouches[0].clientX - touchStartX;
-  if (Math.abs(deltaX) > 50) {
+  const deltaY = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
     if (deltaX < 0) goToMonth(viewYear, viewMonth + 1);
     else goToMonth(viewYear, viewMonth - 1);
   }
   touchStartX = null;
+  touchStartY = null;
 });
 
 // ---------- Month/year picker ----------

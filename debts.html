@@ -15,7 +15,14 @@
     <h1 class="page-heading">Debts</h1>
 
     <div class="debt-net">
-      <p class="debt-net-number" id="netNumber">RM —</p>
+      <div class="hero-label-row" style="justify-content:center;">
+        <span class="debt-net-number" id="netNumber">RM —</span>
+        <button class="eye-btn" id="toggleDebtVisibility" title="Show/hide">
+          <svg id="debtEyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
       <p class="debt-net-label" id="netLabel">Net position</p>
     </div>
 
@@ -73,6 +80,9 @@
         <button class="btn-confirm" id="openRecordPayment">Record a payment</button>
         <button class="btn-secondary" id="openIncreaseDebt" style="color:var(--blue); background:var(--bg-elevated-2);">Add more to this debt</button>
         <button class="btn-secondary" id="deleteDebt">Delete this debt</button>
+
+        <h2 class="section-title" style="margin-top:24px;">Activity</h2>
+        <ul class="grouped-list" id="debtLog"></ul>
       </div>
     </div>
   </div>
