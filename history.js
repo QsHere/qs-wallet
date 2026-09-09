@@ -1,4 +1,4 @@
-import { supabase, money, colorFor } from "./db.js";
+import { supabase, money, colorFor, attachSwipeToDismiss } from "./db.js";
 
 let viewYear, viewMonth; // viewMonth is 0-indexed
 let monthTx = []; // all transactions (income+expense) in the viewed month
@@ -58,6 +58,41 @@ function renderCalendar() {
     </button>`;
   }
   grid.innerHTML = html;
+  renderMonthSummary();
+}
+
+function renderMonthSummary() {
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  document.getElementById("summaryTitle").textContent = `${monthNames[viewMonth]} summary`;
+
+  const income = monthTx.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+  const expense = monthTx.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
+  const net = income - expense;
+
+  document.getElementById("monthSummaryTotals").innerHTML = `
+    <li><span class="row-title">Income</span><span class="row-amt income">+${money(income)}</span></li>
+    <li><span class="row-title">Expenses</span><span class="row-amt expense">-${money(expense)}</span></li>
+    <li><span class="row-title">Net</span><span class="row-amt" style="color:${net >= 0 ? "var(--green)" : "var(--red)"}">${net >= 0 ? "+" : "-"}${money(Math.abs(net))}</span></li>
+  `;
+
+  const byCategory = {};
+  monthTx.filter((t) => t.type === "expense").forEach((t) => {
+    const name = t.categories?.name || "Uncategorized";
+    const icon = t.categories?.icon || "🏷️";
+    if (!byCategory[name]) byCategory[name] = { icon, total: 0 };
+    byCategory[name].total += Number(t.amount);
+  });
+  const top = Object.entries(byCategory).sort((a, b) => b[1].total - a[1].total).slice(0, 5);
+
+  document.getElementById("monthTopCategories").innerHTML = top.length
+    ? top.map(([name, info]) => `<li>
+        <span class="row-left">
+          <span class="tile-mini" style="background:${colorFor(name)}33">${info.icon}</span>
+          <span class="row-title">${name}</span>
+        </span>
+        <span class="row-amt expense">${money(info.total)}</span>
+      </li>`).join("")
+    : `<li class="empty-note">No expenses logged this month.</li>`;
 }
 
 document.getElementById("calGrid").addEventListener("click", (e) => {
@@ -263,3 +298,9 @@ document.getElementById("detailDelete").addEventListener("click", async () => {
 });
 
 loadMonth();
+
+// ---------- Swipe down to dismiss any open sheet ----------
+["monthPickerOverlay", "dayOverlay", "detailOverlay"].forEach((id) => {
+  const overlay = document.getElementById(id);
+  attachSwipeToDismiss(overlay, overlay.querySelector(".sheet-handle"), () => overlay.classList.remove("open"));
+});

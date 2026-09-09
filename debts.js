@@ -1,4 +1,4 @@
-import { supabase, money, todayISO, colorFor } from "./db.js";
+import { supabase, money, todayISO, colorFor, attachSwipeToDismiss } from "./db.js";
 
 let debts = [];
 let accounts = [];
@@ -300,3 +300,9 @@ document.getElementById("confirmPayment").addEventListener("click", async () => 
 });
 
 loadAll();
+
+// ---------- Swipe down to dismiss any open sheet ----------
+["addDebtOverlay", "debtActionOverlay", "increaseOverlay", "paymentOverlay"].forEach((id) => {
+  const overlay = document.getElementById(id);
+  attachSwipeToDismiss(overlay, overlay.querySelector(".sheet-handle"), () => overlay.classList.remove("open"));
+});

@@ -1,14 +1,16 @@
-const CACHE_NAME = "qs-wallet-v7";
+const CACHE_NAME = "qs-wallet-v8";
 const SHELL_FILES = [
   "./",
   "./index.html",
   "./settings.html",
+  "./categories.html",
   "./analytics.html",
   "./history.html",
   "./debts.html",
   "./style.css",
   "./app.js",
   "./settings.js",
+  "./categories.js",
   "./analytics.js",
   "./history.js",
   "./debts.js",
@@ -54,6 +56,18 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() => cached);
       return cached || network;
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow("./index.html");
     })
   );
 });

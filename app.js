@@ -1,4 +1,4 @@
-import { supabase, money, todayISO, defaultPeriod, colorFor, animateNumber } from "./db.js";
+import { supabase, money, todayISO, defaultPeriod, colorFor, animateNumber, attachSwipeToDismiss } from "./db.js";
 
 let accountsCache = [];
 let categoriesCache = [];
@@ -474,4 +474,31 @@ document.getElementById("confirmIncome").addEventListener("click", async () => {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(console.error);
   }
+})();
+
+// ---------- Swipe down to dismiss any open sheet ----------
+["spendOverlay", "incomeOverlay", "detailOverlay"].forEach((id) => {
+  const overlay = document.getElementById(id);
+  if (!overlay) return;
+  attachSwipeToDismiss(overlay, overlay.querySelector(".sheet-handle"), () => overlay.classList.remove("open"));
+});
+
+// ---------- Swipe left on the dashboard to jump to History ----------
+(function enableTabSwipe() {
+  let startX = null, startY = null;
+  document.body.addEventListener("touchstart", (e) => {
+    if (document.querySelector(".sheet-overlay.open")) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.body.addEventListener("touchend", (e) => {
+    if (startX === null || document.querySelector(".sheet-overlay.open")) { startX = null; return; }
+    const deltaX = e.changedTouches[0].clientX - startX;
+    const deltaY = e.changedTouches[0].clientY - startY;
+    if (deltaX < -70 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      window.location.href = "history.html";
+    }
+    startX = null;
+  });
 })();

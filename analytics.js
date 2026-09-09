@@ -3,13 +3,19 @@ import { supabase, money, colorFor } from "./db.js";
 let categories = [];
 let expenses = [];
 let path = []; // breadcrumb trail of {id, name}
-let currentRange = "week";
+let currentRange = "all";
 let chart;
+
+// The date QS Wallet's data starts from — used as the default "show everything" range.
+const APP_START_DATE = "2026-09-06";
 
 function iso(d) { return d.toISOString().slice(0, 10); }
 
 function computeRange(key) {
   const now = new Date();
+  if (key === "all") {
+    return { start: APP_START_DATE, end: iso(now) };
+  }
   if (key === "week") {
     const day = now.getDay();
     const diffToMonday = (day === 0 ? -6 : 1) - day;

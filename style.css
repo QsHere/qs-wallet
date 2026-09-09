@@ -604,6 +604,17 @@ a { -webkit-tap-highlight-color: transparent; }
 
 .pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
+.pill-row-nowrap {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  justify-content: center;
+  margin-bottom: 10px;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.pill-row-nowrap::-webkit-scrollbar { display: none; }
+.pill-row-nowrap .pill { flex-shrink: 0; padding: 9px 14px; font-size: 13.5px; }
+
 .pill {
   background: var(--bg-elevated-2);
   border: none;
@@ -1082,3 +1093,34 @@ a { -webkit-tap-highlight-color: transparent; }
 }
 
 .direction-toggle .pill { flex: 1; justify-content: center; }
+
+/* ---------- iOS-style toggle switch ---------- */
+.switch { position: relative; display: inline-block; width: 48px; height: 28px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch-track {
+  position: absolute; inset: 0;
+  background: var(--bg-elevated-3);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+.switch-thumb {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 24px; height: 24px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.switch input:checked + .switch-track { background: var(--green); }
+.switch input:checked + .switch-track .switch-thumb { transform: translateX(20px); }
+
+.nav-back-inline {
+  display: inline-block;
+  color: var(--blue);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  margin-bottom: 10px;
+}

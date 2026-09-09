@@ -99,3 +99,47 @@ export function attachSwipeToDismiss(overlayEl, handleEl, onDismiss) {
   handleEl.addEventListener("touchmove", (e) => move(e.touches[0].clientY), { passive: true });
   handleEl.addEventListener("touchend", end);
 }
+
+// ---------- Daily reminder (best-effort local notification) ----------
+// NOTE: without a push server, this can only fire while the app happens to be
+// opened/foregrounded after the set time — it can't wake up a closed app or
+// sleeping phone like a true alarm. Good enough as a gentle nudge when you
+// open QS Wallet, not a guaranteed background alert.
+const REMINDER_KEY = "qs-reminder-settings";
+const REMINDER_LAST_SHOWN_KEY = "qs-reminder-last-shown";
+
+export function getReminderSettings() {
+  try {
+    return JSON.parse(localStorage.getItem(REMINDER_KEY)) || { enabled: false, time: "20:00" };
+  } catch {
+    return { enabled: false, time: "20:00" };
+  }
+}
+
+export function setReminderSettings(settings) {
+  localStorage.setItem(REMINDER_KEY, JSON.stringify(settings));
+}
+
+async function maybeFireReminder() {
+  const settings = getReminderSettings();
+  if (!settings.enabled) return;
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+
+  const today = todayISO();
+  if (localStorage.getItem(REMINDER_LAST_SHOWN_KEY) === today) return;
+
+  const now = new Date();
+  const [h, m] = settings.time.split(":").map(Number);
+  const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+  if (now < target) return;
+
+  localStorage.setItem(REMINDER_LAST_SHOWN_KEY, today);
+  const body = "Don't forget to log today's spending in QS Wallet.";
+  if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+    const reg = await navigator.serviceWorker.ready;
+    reg.showNotification("QS Wallet", { body, icon: "icon-192.png", badge: "icon-192.png" });
+  } else {
+    new Notification("QS Wallet", { body, icon: "icon-192.png" });
+  }
+}
+maybeFireReminder();

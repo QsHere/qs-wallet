@@ -7,40 +7,24 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon-192.png" />
 <link rel="stylesheet" href="style.css" />
-<title>QS Wallet · Analytics</title>
+<title>QS Wallet · Categories</title>
 </head>
 <body>
 
-  <main class="analytics-page">
-    <h1 class="page-heading">Analytics</h1>
+  <main class="settings-page">
+    <a href="settings.html" class="nav-back-inline">‹ Settings</a>
+    <h1 class="page-heading">Categories</h1>
 
-    <div class="pill-row pill-row-nowrap" id="rangePills">
-      <button type="button" class="pill" data-range="week">This week</button>
-      <button type="button" class="pill" data-range="month">This month</button>
-      <button type="button" class="pill" data-range="custom">Custom…</button>
+    <div class="add-row">
+      <input type="text" id="newTopIcon" class="text-input icon-input" placeholder="🏷️" maxlength="4" />
+      <input type="text" id="newTopCategory" placeholder="New top-level category" class="text-input" />
+      <button class="small-btn btn-confirm" id="addTopCategory">Add</button>
     </div>
 
-    <div class="date-input-wrap hidden" id="customRangeWrap" style="max-width:280px; margin:0 auto 20px;">
-      <div style="display:flex; gap:8px;">
-        <input type="date" class="date-input" id="rangeStart" />
-        <input type="date" class="date-input" id="rangeEnd" />
-      </div>
-    </div>
-
-    <p class="breadcrumb" id="breadcrumb"></p>
-
-    <p class="analytics-total" id="totalAmount">RM —</p>
-    <p class="analytics-total-label" id="totalLabel">Total spent</p>
-
-    <div class="chart-wrap">
-      <canvas id="pieChart" width="260" height="260"></canvas>
-    </div>
-
-    <ul class="legend-list" id="legendList"></ul>
+    <ul class="category-tree" id="categoryTree"></ul>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="module" src="analytics.js"></script>
+  <script type="module" src="categories.js"></script>
 
   <div class="tab-bar-wrap">
     <nav class="tab-bar">
@@ -52,7 +36,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
         <span>History</span>
       </a>
-      <a href="analytics.html" class="tab-item active">
+      <a href="analytics.html" class="tab-item">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
         <span>Analytics</span>
       </a>
@@ -60,7 +44,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h13M7 8l4-4M7 8l4 4"/><path d="M17 16H4M17 16l-4-4M17 16l4 4"/></svg>
         <span>Debts</span>
       </a>
-      <a href="settings.html" class="tab-item">
+      <a href="settings.html" class="tab-item active">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>Settings</span>
       </a>
