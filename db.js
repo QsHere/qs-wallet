@@ -75,29 +75,96 @@ export function animateCount(el, from, to, duration = 650, formatter = (n) => n.
 }
 
 // Adds swipe-down-to-dismiss to a bottom sheet via its drag handle.
-export function attachSwipeToDismiss(overlayEl, handleEl, onDismiss) {
-  let startY = 0, currentY = 0, dragging = false;
+// preventDefault on touchmove stops the browser's native pull-to-refresh
+// from hijacking the gesture (which is what was happening before).
+export function attachSwipeToDismiss(overlayEl, _handleEl, onDismiss) {
   const sheet = overlayEl.querySelector(".sheet");
+  const DRAG_ZONE = 90; // top portion (handle + header) that can start a drag
+  let startY = 0, currentY = 0, dragging = false;
 
-  const start = (y) => { dragging = true; startY = y; sheet.style.transition = "none"; };
-  const move = (y) => {
+  function eligible(y) {
+    const rect = sheet.getBoundingClientRect();
+    return (y - rect.top) < DRAG_ZONE;
+  }
+
+  const start = (e) => {
+    const y = e.touches[0].clientY;
+    if (!eligible(y)) return;
+    dragging = true;
+    startY = y;
+    sheet.style.transition = "none";
+  };
+  const move = (e) => {
     if (!dragging) return;
+    const y = e.touches[0].clientY;
     currentY = Math.max(0, y - startY);
+    if (currentY > 4 && e.cancelable) e.preventDefault();
     sheet.style.transform = `translateY(${currentY}px)`;
   };
   const end = () => {
     if (!dragging) return;
     dragging = false;
     sheet.style.transition = "";
-    if (currentY > 90) {
-      onDismiss();
-    }
+    if (currentY > 90) onDismiss();
     sheet.style.transform = "";
+    currentY = 0;
   };
 
-  handleEl.addEventListener("touchstart", (e) => start(e.touches[0].clientY), { passive: true });
-  handleEl.addEventListener("touchmove", (e) => move(e.touches[0].clientY), { passive: true });
-  handleEl.addEventListener("touchend", end);
+  sheet.addEventListener("touchstart", start, { passive: true });
+  sheet.addEventListener("touchmove", move, { passive: false });
+  sheet.addEventListener("touchend", end);
+}
+
+// Adds swipe-left/right page navigation with a following, animated transition.
+// Pass `next`/`prev` as functions that perform the navigation (e.g. set location.href).
+// Omit either to disable navigation in that direction (e.g. first/last tab).
+export function attachSwipeNav(containerEl, { next, prev } = {}) {
+  let startX = null, startY = null, dragging = false, horizontal = false;
+
+  containerEl.addEventListener("touchstart", (e) => {
+    if (document.querySelector(".sheet-overlay.open")) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    dragging = true;
+    horizontal = false;
+  }, { passive: true });
+
+  containerEl.addEventListener("touchmove", (e) => {
+    if (!dragging) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if (!horizontal) {
+      if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+        horizontal = true;
+      } else if (Math.abs(dy) > 12) {
+        dragging = false;
+        return;
+      } else {
+        return;
+      }
+    }
+    const allowed = (dx < 0 && next) || (dx > 0 && prev);
+    const damp = allowed ? 1 : 0.25;
+    containerEl.style.transition = "none";
+    containerEl.style.transform = `translateX(${dx * damp}px)`;
+  }, { passive: true });
+
+  containerEl.addEventListener("touchend", (e) => {
+    if (!dragging) return;
+    dragging = false;
+    if (!horizontal) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    containerEl.style.transition = "transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)";
+    if (dx < -70 && next) {
+      containerEl.style.transform = "translateX(-100%)";
+      setTimeout(next, 200);
+    } else if (dx > 70 && prev) {
+      containerEl.style.transform = "translateX(100%)";
+      setTimeout(prev, 200);
+    } else {
+      containerEl.style.transform = "translateX(0)";
+    }
+  });
 }
 
 // ---------- Daily reminder (best-effort local notification) ----------

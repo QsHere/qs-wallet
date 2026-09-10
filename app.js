@@ -485,19 +485,32 @@ document.getElementById("confirmIncome").addEventListener("click", async () => {
 
 // ---------- Swipe left on the dashboard to jump to History ----------
 (function enableTabSwipe() {
-  let startX = null, startY = null;
+  let startX = null, startY = null, startTime = 0, ignore = false;
+
   document.body.addEventListener("touchstart", (e) => {
-    if (document.querySelector(".sheet-overlay.open")) return;
+    if (document.querySelector(".sheet-overlay.open")) { ignore = true; return; }
+    // Don't treat drags that start on buttons, links, inputs, or pills as tab-swipes —
+    // those are normal taps and may wobble a few pixels sideways.
+    if (e.target.closest("button, a, input, select, textarea, .pill, .category-btn, .tab-bar")) {
+      ignore = true;
+      return;
+    }
+    ignore = false;
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
+    startTime = Date.now();
   }, { passive: true });
 
   document.body.addEventListener("touchend", (e) => {
-    if (startX === null || document.querySelector(".sheet-overlay.open")) { startX = null; return; }
+    if (ignore || startX === null || document.querySelector(".sheet-overlay.open")) { startX = null; return; }
     const deltaX = e.changedTouches[0].clientX - startX;
     const deltaY = e.changedTouches[0].clientY - startY;
-    if (deltaX < -70 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
-      window.location.href = "history.html";
+    const elapsed = Date.now() - startTime;
+    const isDeliberate = Math.abs(deltaX) > 110 && Math.abs(deltaX) > Math.abs(deltaY) * 2.5 && elapsed < 600;
+
+    if (isDeliberate && deltaX < 0) {
+      document.body.classList.add("page-exit-left");
+      setTimeout(() => { window.location.href = "history.html"; }, 160);
     }
     startX = null;
   });

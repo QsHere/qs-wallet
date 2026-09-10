@@ -74,25 +74,6 @@ function renderMonthSummary() {
     <li><span class="row-title">Expenses</span><span class="row-amt expense">-${money(expense)}</span></li>
     <li><span class="row-title">Net</span><span class="row-amt" style="color:${net >= 0 ? "var(--green)" : "var(--red)"}">${net >= 0 ? "+" : "-"}${money(Math.abs(net))}</span></li>
   `;
-
-  const byCategory = {};
-  monthTx.filter((t) => t.type === "expense").forEach((t) => {
-    const name = t.categories?.name || "Uncategorized";
-    const icon = t.categories?.icon || "🏷️";
-    if (!byCategory[name]) byCategory[name] = { icon, total: 0 };
-    byCategory[name].total += Number(t.amount);
-  });
-  const top = Object.entries(byCategory).sort((a, b) => b[1].total - a[1].total).slice(0, 5);
-
-  document.getElementById("monthTopCategories").innerHTML = top.length
-    ? top.map(([name, info]) => `<li>
-        <span class="row-left">
-          <span class="tile-mini" style="background:${colorFor(name)}33">${info.icon}</span>
-          <span class="row-title">${name}</span>
-        </span>
-        <span class="row-amt expense">${money(info.total)}</span>
-      </li>`).join("")
-    : `<li class="empty-note">No expenses logged this month.</li>`;
 }
 
 document.getElementById("calGrid").addEventListener("click", (e) => {
