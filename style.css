@@ -28,6 +28,7 @@
 }
 
 html, body {
+  height: 100%;
   margin: 0;
   padding: 0;
   background: var(--bg);
@@ -35,6 +36,7 @@ html, body {
   font-family: -apple-system, "Inter", "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
   overscroll-behavior-y: contain;
+  overflow: hidden; /* pages manage their own internal scroll instead */
 }
 
 body {
@@ -43,7 +45,7 @@ body {
 
 @keyframes pageEnter {
   from { opacity: 0; transform: translateX(10px); }
-  to { opacity: 1; transform: translateX(0); }
+  to { opacity: 1; transform: none; }
 }
 
 body.page-exit-left {
@@ -54,7 +56,13 @@ body.page-exit-left {
   to { opacity: 0; transform: translateX(-26px); }
 }
 
-body { padding-bottom: 90px; }
+body.page-exit-right {
+  animation: pageExitRight 0.16s ease forwards;
+}
+
+@keyframes pageExitRight {
+  to { opacity: 0; transform: translateX(26px); }
+}
 
 button {
   font-family: inherit;
@@ -187,9 +195,13 @@ a { -webkit-tap-highlight-color: transparent; }
 
 /* ---------- Dashboard ---------- */
 .dashboard {
-  padding: max(24px, env(safe-area-inset-top, 24px)) 20px 0;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: max(24px, env(safe-area-inset-top, 24px)) 20px 100px;
   max-width: 480px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .greeting { padding: 4px 4px 0; }
@@ -734,9 +746,13 @@ a { -webkit-tap-highlight-color: transparent; }
 
 /* ---------- Settings (categories) page ---------- */
 .settings-page {
-  padding: max(24px, env(safe-area-inset-top, 24px)) 20px 40px;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: max(24px, env(safe-area-inset-top, 24px)) 20px 100px;
   max-width: 480px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .add-row {
@@ -806,9 +822,13 @@ a { -webkit-tap-highlight-color: transparent; }
 
 /* ---------- Analytics page ---------- */
 .analytics-page {
-  padding: max(24px, env(safe-area-inset-top, 24px)) 20px 40px;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: max(24px, env(safe-area-inset-top, 24px)) 20px 100px;
   max-width: 480px;
   margin: 0 auto;
+  box-sizing: border-box;
   text-align: center;
 }
 
@@ -912,7 +932,11 @@ a { -webkit-tap-highlight-color: transparent; }
 
 /* ---------- History page: calendar ---------- */
 .history-page {
-  padding: max(24px, env(safe-area-inset-top, 24px)) 16px 40px;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  padding: max(24px, env(safe-area-inset-top, 24px)) 16px 100px;
   max-width: 480px;
   margin: 0 auto;
   touch-action: pan-y;
@@ -1065,7 +1089,7 @@ a { -webkit-tap-highlight-color: transparent; }
 .recent-amt { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: 10px; }
 .recent-amt.expense { color: var(--red); }
 .recent-amt.income { color: var(--green); }
-.debts-page { padding: max(24px, env(safe-area-inset-top, 24px)) 20px 40px; max-width: 480px; margin: 0 auto; }
+.debts-page { height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box; padding: max(24px, env(safe-area-inset-top, 24px)) 20px 100px; max-width: 480px; margin: 0 auto; }
 
 .debt-net {
   text-align: center;

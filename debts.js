@@ -1,4 +1,4 @@
-import { supabase, money, todayISO, colorFor, attachSwipeToDismiss } from "./db.js";
+import { supabase, money, todayISO, colorFor, attachSwipeToDismiss, enableTabSwipe } from "./db.js";
 
 let debts = [];
 let accounts = [];
@@ -306,3 +306,5 @@ loadAll();
   const overlay = document.getElementById(id);
   attachSwipeToDismiss(overlay, overlay.querySelector(".sheet-handle"), () => overlay.classList.remove("open"));
 });
+
+enableTabSwipe({ prev: "analytics.html", next: "settings.html" });

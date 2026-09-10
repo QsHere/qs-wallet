@@ -1,4 +1,4 @@
-import { getReminderSettings, setReminderSettings } from "./db.js";
+import { getReminderSettings, setReminderSettings, enableTabSwipe } from "./db.js";
 
 const toggle = document.getElementById("reminderToggle");
 const timeRow = document.getElementById("reminderTimeRow");
@@ -51,3 +51,5 @@ document.getElementById("goCategories").addEventListener("click", () => {
 });
 
 render();
+
+enableTabSwipe({ prev: "debts.html" });

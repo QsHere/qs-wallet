@@ -210,3 +210,42 @@ async function maybeFireReminder() {
   }
 }
 maybeFireReminder();
+
+// ---------- Shared left/right swipe navigation between tab-bar pages ----------
+// Ignores drags starting on interactive elements so normal taps never misfire,
+// and requires a clear, fast, mostly-horizontal drag. Pass the page to go to
+// on swipe-left (`next`) and/or swipe-right (`prev`); omit either at the ends
+// of the tab order. Deliberately NOT used on the History page, which reserves
+// horizontal swipes for changing calendar months instead.
+export function enableTabSwipe({ prev, next } = {}) {
+  let startX = null, startY = null, startTime = 0, ignore = false;
+
+  document.body.addEventListener("touchstart", (e) => {
+    if (document.querySelector(".sheet-overlay.open")) { ignore = true; return; }
+    if (e.target.closest("button, a, input, select, textarea, .pill, .category-btn, .tab-bar")) {
+      ignore = true;
+      return;
+    }
+    ignore = false;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    startTime = Date.now();
+  }, { passive: true });
+
+  document.body.addEventListener("touchend", (e) => {
+    if (ignore || startX === null || document.querySelector(".sheet-overlay.open")) { startX = null; return; }
+    const deltaX = e.changedTouches[0].clientX - startX;
+    const deltaY = e.changedTouches[0].clientY - startY;
+    const elapsed = Date.now() - startTime;
+    const isDeliberate = Math.abs(deltaX) > 110 && Math.abs(deltaX) > Math.abs(deltaY) * 2.5 && elapsed < 600;
+
+    if (isDeliberate && deltaX < 0 && next) {
+      document.body.classList.add("page-exit-left");
+      setTimeout(() => { window.location.href = next; }, 160);
+    } else if (isDeliberate && deltaX > 0 && prev) {
+      document.body.classList.add("page-exit-right");
+      setTimeout(() => { window.location.href = prev; }, 160);
+    }
+    startX = null;
+  });
+}
