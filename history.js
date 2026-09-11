@@ -1,4 +1,4 @@
-import { supabase, money, colorFor, attachSwipeToDismiss } from "./db.js";
+import { supabase, money, colorFor, attachSwipeToDismiss, enableTabSwipe } from "./db.js";
 
 let viewYear, viewMonth; // viewMonth is 0-indexed
 let monthTx = []; // all transactions (income+expense) in the viewed month
@@ -82,37 +82,66 @@ document.getElementById("calGrid").addEventListener("click", (e) => {
   openDay(cell.dataset.date);
 });
 
-// ---------- Month navigation ----------
-function goToMonth(y, m) {
-  viewYear = y;
-  viewMonth = m;
-  if (viewMonth < 0) { viewMonth = 11; viewYear--; }
-  if (viewMonth > 11) { viewMonth = 0; viewYear++; }
-  loadMonth();
+// ---------- Month navigation (with slide animation) ----------
+function goToMonth(y, m, direction = 0) {
+  const grid = document.getElementById("calGrid");
+
+  const applyChange = () => {
+    viewYear = y;
+    viewMonth = m;
+    if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+    if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    loadMonth();
+  };
+
+  if (!direction) { applyChange(); return; }
+
+  // Slide the old grid out in the direction of travel, swap content while
+  // invisible, then slide the new grid in from the opposite side.
+  grid.style.transition = "transform 0.15s ease, opacity 0.15s ease";
+  grid.style.transform = `translateX(${direction > 0 ? "-22px" : "22px"})`;
+  grid.style.opacity = "0";
+
+  setTimeout(() => {
+    applyChange();
+    grid.style.transition = "none";
+    grid.style.transform = `translateX(${direction > 0 ? "22px" : "-22px"})`;
+    grid.style.opacity = "0";
+    requestAnimationFrame(() => {
+      grid.style.transition = "transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease";
+      grid.style.transform = "translateX(0)";
+      grid.style.opacity = "1";
+    });
+  }, 150);
 }
 
-document.getElementById("prevMonth")?.addEventListener("click", () => goToMonth(viewYear, viewMonth - 1));
-document.getElementById("nextMonth")?.addEventListener("click", () => goToMonth(viewYear, viewMonth + 1));
+document.getElementById("prevMonth")?.addEventListener("click", () => goToMonth(viewYear, viewMonth - 1, -1));
+document.getElementById("nextMonth")?.addEventListener("click", () => goToMonth(viewYear, viewMonth + 1, 1));
 
-// Swipe left/right anywhere on the calendar page to change month
+// Swipe left/right on the calendar itself (only) changes month
 let touchStartX = null;
 let touchStartY = null;
-const swipeArea = document.querySelector(".history-page");
-swipeArea.addEventListener("touchstart", (e) => {
+const calendarArea = document.querySelector(".cal-header").closest("main");
+const calendarZone = (el) => el.closest(".cal-header, .cal-weekdays, .cal-grid");
+calendarArea.addEventListener("touchstart", (e) => {
+  if (!calendarZone(e.target)) { touchStartX = null; return; }
   touchStartX = e.touches[0].clientX;
   touchStartY = e.touches[0].clientY;
 }, { passive: true });
-swipeArea.addEventListener("touchend", (e) => {
+calendarArea.addEventListener("touchend", (e) => {
   if (touchStartX === null) return;
   const deltaX = e.changedTouches[0].clientX - touchStartX;
   const deltaY = e.changedTouches[0].clientY - touchStartY;
   if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
-    if (deltaX < 0) goToMonth(viewYear, viewMonth + 1);
-    else goToMonth(viewYear, viewMonth - 1);
+    if (deltaX < 0) goToMonth(viewYear, viewMonth + 1, 1);
+    else goToMonth(viewYear, viewMonth - 1, -1);
   }
   touchStartX = null;
   touchStartY = null;
 });
+
+// Swipe left/right on the summary section (below the calendar) navigates tabs instead
+enableTabSwipe({ prev: "index.html", next: "analytics.html", scope: "#historySummary" });
 
 // ---------- Month/year picker ----------
 document.getElementById("monthLabel").addEventListener("click", () => {

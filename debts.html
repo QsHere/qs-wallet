@@ -87,6 +87,30 @@
     </div>
   </div>
 
+  <!-- ACTIVITY LOG ENTRY EDIT SHEET -->
+  <div class="sheet-overlay" id="logEditOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="logEditTitle">Activity</span>
+        <button class="sheet-close" id="logEditClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="amount-row">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="logEditAmount" />
+        </div>
+        <label class="field-label">Date</label>
+        <input type="date" class="date-input" id="logEditDate" />
+        <p class="hero-caption" id="logEditHint" style="text-align:left; margin:10px 4px 0;"></p>
+
+        <button class="btn-confirm" id="logEditSave">Save changes</button>
+        <button class="btn-secondary" id="logEditDelete">Delete this activity</button>
+      </div>
+    </div>
+  </div>
+
   <!-- INCREASE DEBT SHEET -->
   <div class="sheet-overlay" id="increaseOverlay">
     <div class="sheet">

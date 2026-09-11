@@ -3,6 +3,8 @@ import { supabase, money, todayISO, colorFor, attachSwipeToDismiss, enableTabSwi
 let debts = [];
 let accounts = [];
 let activeDebtId = null;
+let activeLogEntry = null;
+let currentLog = [];
 let addDirection = "owed_to_me";
 let paymentState = { accountId: null, date: todayISO() };
 let hideAmounts = localStorage.getItem("qs-hide-balance") === "1";
@@ -104,8 +106,9 @@ async function loadLog(debtId) {
     .order("created_at", { ascending: false });
   if (error) { console.error(error); logEl.innerHTML = `<li class="empty-note">Couldn't load activity.</li>`; return; }
 
-  logEl.innerHTML = data.length
-    ? data.map(logRowHTML).join("")
+  currentLog = data || [];
+  logEl.innerHTML = currentLog.length
+    ? currentLog.map(logRowHTML).join("")
     : `<li class="empty-note">No activity logged yet.</li>`;
 }
 
@@ -114,17 +117,111 @@ function logRowHTML(a) {
   const label = labels[a.type] || a.type;
   const sign = a.type === "payment" ? "-" : "+";
   const tint = a.type === "payment" ? "#30D15833" : "#0A84FF33";
-  return `<li>
+  const editable = a.type !== "created";
+  return `<li class="${editable ? "tappable" : ""}" ${editable ? `data-log-id="${a.id}"` : ""}>
     <span class="row-left">
       <span class="row-icon" style="background:${tint}">${a.type === "payment" ? "💸" : "➕"}</span>
       <span>
         <div class="row-title">${label}</div>
-        <div class="row-meta">${a.date}</div>
+        <div class="row-meta">${a.date}${editable ? "" : " · locked"}</div>
       </span>
     </span>
     <span class="row-amt">${sign}${maskedMoney(a.amount)}</span>
   </li>`;
 }
+
+document.getElementById("debtLog").addEventListener("click", (e) => {
+  const row = e.target.closest("[data-log-id]");
+  if (!row) return;
+  openLogEdit(row.dataset.logId);
+});
+
+function openLogEdit(logId) {
+  const entry = currentLog.find((x) => x.id === logId);
+  if (!entry) return;
+  activeLogEntry = entry;
+  const labels = { payment: "Payment", increase: "Added to balance" };
+  document.getElementById("logEditTitle").textContent = labels[entry.type] || entry.type;
+  document.getElementById("logEditAmount").value = entry.amount;
+  document.getElementById("logEditDate").value = entry.date;
+  document.getElementById("logEditHint").textContent = entry.type === "payment"
+    ? "Editing or deleting this will also update the linked account balance and transaction."
+    : "This only affects the debt balance — no account is linked to this entry.";
+  document.getElementById("debtActionOverlay").classList.remove("open");
+  document.getElementById("logEditOverlay").classList.add("open");
+}
+
+document.getElementById("logEditClose").addEventListener("click", () => {
+  document.getElementById("logEditOverlay").classList.remove("open");
+});
+
+document.getElementById("logEditSave").addEventListener("click", async () => {
+  const entry = activeLogEntry;
+  if (!entry) return;
+  const newAmount = parseFloat(document.getElementById("logEditAmount").value);
+  const newDate = document.getElementById("logEditDate").value;
+  if (!newAmount || newAmount <= 0 || !newDate) return;
+
+  const d = debts.find((x) => x.id === entry.debt_id);
+  const diff = newAmount - Number(entry.amount); // positive if amount increased
+
+  if (entry.type === "increase") {
+    await supabase.from("debts").update({ balance: Number(d.balance) + diff }).eq("id", d.id);
+  } else if (entry.type === "payment") {
+    // A bigger payment reduces the debt further; a smaller one owes more back.
+    await supabase.from("debts").update({ balance: Math.max(0, Number(d.balance) - diff) }).eq("id", d.id);
+
+    if (entry.account_id) {
+      const { data: account } = await supabase.from("accounts").select("*").eq("id", entry.account_id).single();
+      if (account) {
+        const balanceDelta = d.direction === "owed_to_me" ? diff : -diff;
+        await supabase.from("accounts").update({ balance: Number(account.balance) + balanceDelta }).eq("id", entry.account_id);
+      }
+    }
+    if (entry.transaction_id) {
+      await supabase.from("transactions").update({ amount: newAmount, date: newDate }).eq("id", entry.transaction_id);
+    }
+  }
+
+  await supabase.from("debt_activity").update({ amount: newAmount, date: newDate }).eq("id", entry.id);
+
+  document.getElementById("logEditOverlay").classList.remove("open");
+  await loadAll();
+  openActionSheet(entry.debt_id);
+});
+
+document.getElementById("logEditDelete").addEventListener("click", async () => {
+  const entry = activeLogEntry;
+  if (!entry) return;
+  const ok = confirm("Delete this activity? The debt balance (and linked account, if any) will be adjusted back.");
+  if (!ok) return;
+
+  const d = debts.find((x) => x.id === entry.debt_id);
+
+  if (entry.type === "increase") {
+    await supabase.from("debts").update({ balance: Math.max(0, Number(d.balance) - Number(entry.amount)) }).eq("id", d.id);
+  } else if (entry.type === "payment") {
+    // Undo the payment's effect on the debt balance
+    await supabase.from("debts").update({ balance: Number(d.balance) + Number(entry.amount) }).eq("id", d.id);
+
+    if (entry.account_id) {
+      const { data: account } = await supabase.from("accounts").select("*").eq("id", entry.account_id).single();
+      if (account) {
+        const revert = d.direction === "owed_to_me" ? -Number(entry.amount) : Number(entry.amount);
+        await supabase.from("accounts").update({ balance: Number(account.balance) + revert }).eq("id", entry.account_id);
+      }
+    }
+    if (entry.transaction_id) {
+      await supabase.from("transactions").delete().eq("id", entry.transaction_id);
+    }
+  }
+
+  await supabase.from("debt_activity").delete().eq("id", entry.id);
+
+  document.getElementById("logEditOverlay").classList.remove("open");
+  await loadAll();
+  openActionSheet(entry.debt_id);
+});
 
 document.getElementById("debtActionClose").addEventListener("click", () => {
   document.getElementById("debtActionOverlay").classList.remove("open");
@@ -278,22 +375,30 @@ document.getElementById("confirmPayment").addEventListener("click", async () => 
   // 1. Adjust the debt balance
   const newBalance = Math.max(0, Number(d.balance) - amount);
   await supabase.from("debts").update({ balance: newBalance }).eq("id", d.id);
-  await supabase.from("debt_activity").insert({ debt_id: d.id, date: paymentState.date, amount, type: "payment" });
 
   // 2. Reflect the real cash movement as a normal transaction + account balance change
+  let transactionId = null;
   if (d.direction === "owed_to_me") {
-    await supabase.from("transactions").insert({
+    const { data: tx } = await supabase.from("transactions").insert({
       date: paymentState.date, type: "income", amount, account_id: accountId,
       source: `Repayment from ${d.person}`,
-    });
+    }).select().single();
+    transactionId = tx?.id || null;
     await supabase.from("accounts").update({ balance: Number(account.balance) + amount }).eq("id", accountId);
   } else {
-    await supabase.from("transactions").insert({
+    const { data: tx } = await supabase.from("transactions").insert({
       date: paymentState.date, type: "expense", amount, account_id: accountId,
       note: `Repayment to ${d.person}`,
-    });
+    }).select().single();
+    transactionId = tx?.id || null;
     await supabase.from("accounts").update({ balance: Number(account.balance) - amount }).eq("id", accountId);
   }
+
+  // 3. Log the activity, linked to the transaction/account so it can be edited or undone later
+  await supabase.from("debt_activity").insert({
+    debt_id: d.id, date: paymentState.date, amount, type: "payment",
+    transaction_id: transactionId, account_id: accountId,
+  });
 
   document.getElementById("paymentOverlay").classList.remove("open");
   await loadAll();
@@ -302,7 +407,7 @@ document.getElementById("confirmPayment").addEventListener("click", async () => 
 loadAll();
 
 // ---------- Swipe down to dismiss any open sheet ----------
-["addDebtOverlay", "debtActionOverlay", "increaseOverlay", "paymentOverlay"].forEach((id) => {
+["addDebtOverlay", "debtActionOverlay", "increaseOverlay", "paymentOverlay", "logEditOverlay"].forEach((id) => {
   const overlay = document.getElementById(id);
   attachSwipeToDismiss(overlay, overlay.querySelector(".sheet-handle"), () => overlay.classList.remove("open"));
 });

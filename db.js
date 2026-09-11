@@ -217,11 +217,12 @@ maybeFireReminder();
 // on swipe-left (`next`) and/or swipe-right (`prev`); omit either at the ends
 // of the tab order. Deliberately NOT used on the History page, which reserves
 // horizontal swipes for changing calendar months instead.
-export function enableTabSwipe({ prev, next } = {}) {
+export function enableTabSwipe({ prev, next, scope } = {}) {
   let startX = null, startY = null, startTime = 0, ignore = false;
 
   document.body.addEventListener("touchstart", (e) => {
     if (document.querySelector(".sheet-overlay.open")) { ignore = true; return; }
+    if (scope && !e.target.closest(scope)) { ignore = true; return; }
     if (e.target.closest("button, a, input, select, textarea, .pill, .category-btn, .tab-bar")) {
       ignore = true;
       return;
