@@ -195,9 +195,10 @@ function openDay(dateStr) {
 
 function rowHTML(t) {
   const isIncome = t.type === "income";
-  const label = isIncome ? (t.source || "Income") : (t.categories?.name || "Expense");
-  const icon = isIncome ? "💰" : (t.categories?.icon || "🏷️");
-  const tint = isIncome ? "#30D15833" : colorFor(label) + "33";
+  const isTopUp = !isIncome && t.categories?.name === "Card Top-up";
+  const label = isIncome ? (t.source || "Income") : (isTopUp ? (t.note || "Card top up") : (t.categories?.name || "Expense"));
+  const icon = isIncome ? "💰" : (isTopUp ? "💳" : (t.categories?.icon || "🏷️"));
+  const tint = isIncome ? "#30D15833" : (isTopUp ? "#0A84FF33" : colorFor(label) + "33");
   const sign = isIncome ? "+" : "-";
   return `<li class="tappable" data-id="${t.id}">
     <span class="row-left">
@@ -227,9 +228,10 @@ function openDetail(id) {
   if (!t) return;
   activeDetailId = id;
   const isIncome = t.type === "income";
-  const label = isIncome ? (t.source || "Income") : (t.categories?.name || "Expense");
-  const icon = isIncome ? "💰" : (t.categories?.icon || "🏷️");
-  const tint = isIncome ? "#30D15833" : colorFor(label) + "33";
+  const isTopUp = !isIncome && t.categories?.name === "Card Top-up";
+  const label = isIncome ? (t.source || "Income") : (isTopUp ? (t.note || "Card top up") : (t.categories?.name || "Expense"));
+  const icon = isIncome ? "💰" : (isTopUp ? "💳" : (t.categories?.icon || "🏷️"));
+  const tint = isIncome ? "#30D15833" : (isTopUp ? "#0A84FF33" : colorFor(label) + "33");
 
   document.getElementById("detailIcon").textContent = icon;
   document.getElementById("detailIconWrap").style.background = tint;

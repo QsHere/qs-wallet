@@ -18,6 +18,14 @@ let topUpState = { accountId: null, date: todayISO() };
 let cardSpendState = { date: todayISO() };
 let currentLog = [];
 let activeLogEntry = null;
+let topUpCategoryId = null;
+
+async function getTopUpCategoryId() {
+  if (topUpCategoryId) return topUpCategoryId;
+  const { data } = await supabase.from("categories").select("id").eq("name", "Card Top-up").eq("is_system", true).single();
+  topUpCategoryId = data?.id || null;
+  return topUpCategoryId;
+}
 
 function yesterdayISO() {
   const d = new Date();
@@ -250,6 +258,7 @@ document.getElementById("confirmTopUp").addEventListener("click", async () => {
 
   const { data: tx } = await supabase.from("transactions").insert({
     date: topUpState.date, type: "expense", amount, account_id: accountId,
+    category_id: await getTopUpCategoryId(),
     note: `Top up: ${c.name}`,
   }).select().single();
 
@@ -449,7 +458,9 @@ enableTabSwipe({ prev: "history.html", next: "debts.html", scope: "#cardActivity
 (async function init() {
   await loadAll();
   const params = new URLSearchParams(window.location.search);
-  if (params.get("action") === "spend" && activeCard() && activeCard().has_balance) {
+  if (params.get("action") === "topup" && activeCard() && activeCard().has_balance) {
+    document.getElementById("cardTopUp").click();
+  } else if (params.get("action") === "spend" && activeCard() && activeCard().has_balance) {
     openCardSpendFlow();
   }
 })();

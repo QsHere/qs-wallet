@@ -49,19 +49,19 @@
         <label class="field-label">Name</label>
         <input type="text" id="cardName" class="text-input" placeholder="e.g. MRT Card, IC, Gym Membership" />
 
-        <label class="field-label">Description (optional)</label>
-        <input type="text" id="cardDescription" class="text-input" placeholder="e.g. Touch 'n Go transit card" />
-
-        <label class="field-label">Expiry date (optional)</label>
-        <input type="date" id="cardExpiry" class="date-input" />
+        <label class="field-label">Description &amp; expiry (both optional)</label>
+        <div style="display:flex; gap:10px;">
+          <input type="text" id="cardDescription" class="text-input" placeholder="Description" style="flex:1.4;" />
+          <input type="date" id="cardExpiry" class="date-input" style="flex:1;" />
+        </div>
 
         <label class="field-label">Card color</label>
         <div class="swatch-row" id="cardSwatches"></div>
 
-        <label class="field-label">Track a balance for this card?</label>
+        <label class="field-label">Track a balance?</label>
         <div class="pill-row">
-          <button type="button" class="pill selected" id="cardHasBalanceYes" data-has-balance="true">Yes — top up &amp; spend</button>
-          <button type="button" class="pill" id="cardHasBalanceNo" data-has-balance="false">No — reference only</button>
+          <button type="button" class="pill selected" id="cardHasBalanceYes" data-has-balance="true" style="flex:1; justify-content:center;">Track balance</button>
+          <button type="button" class="pill" id="cardHasBalanceNo" data-has-balance="false" style="flex:1; justify-content:center;">Reference only</button>
         </div>
 
         <div id="cardInitialBalanceWrap">

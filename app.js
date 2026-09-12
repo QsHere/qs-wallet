@@ -169,7 +169,7 @@ async function loadCategories() {
   const { data, error } = await supabase.from("categories").select("*").order("name");
   if (error) { console.error(error); return; }
   categoriesCache = data;
-  renderCategoryGrid(data.filter((c) => !c.parent_id), true);
+  renderCategoryGrid(data.filter((c) => !c.parent_id && !c.is_system), true);
 }
 
 function renderCategoryGrid(list, isTopLevel = false) {
@@ -211,7 +211,8 @@ async function loadRecent() {
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 5);
 
-  recentCache = (txData || []); // detail sheet lookups only apply to real transactions
+  recentCache = (txData || []);
+  recentCardCache = (cardData || []);
 
   document.getElementById("recentList").innerHTML = combined.length
     ? combined.map((item) => (item.kind === "card" ? cardRecentRowHTML(item.data) : recentRowHTML(item.data)))
@@ -221,7 +222,7 @@ async function loadRecent() {
 
 function cardRecentRowHTML(c) {
   const label = c.detail || `${c.cards?.name || "Card"} spend`;
-  return `<li>
+  return `<li class="tappable" data-id="${c.id}" data-kind="card">
     <span class="recent-left">
       <span class="recent-icon" style="background:#FF453A33">💳</span>
       <span class="recent-cat">${label}</span>
@@ -232,11 +233,12 @@ function cardRecentRowHTML(c) {
 
 function recentRowHTML(t) {
   const isIncome = t.type === "income";
-  const label = isIncome ? (t.source || "Income") : (t.categories?.name || "Expense");
-  const icon = isIncome ? "💰" : (t.categories?.icon || "🏷️");
-  const tint = isIncome ? "#30D15833" : colorFor(label) + "33";
+  const isTopUp = !isIncome && t.categories?.name === "Card Top-up";
+  const label = isIncome ? (t.source || "Income") : (isTopUp ? (t.note || "Card top up") : (t.categories?.name || "Expense"));
+  const icon = isIncome ? "💰" : (isTopUp ? "💳" : (t.categories?.icon || "🏷️"));
+  const tint = isIncome ? "#30D15833" : (isTopUp ? "#0A84FF33" : colorFor(label) + "33");
   const sign = isIncome ? "+" : "-";
-  return `<li class="tappable" data-id="${t.id}">
+  return `<li class="tappable" data-id="${t.id}" data-kind="transaction">
     <span class="recent-left">
       <span class="recent-icon" style="background:${tint}">${icon}</span>
       <span class="recent-cat">${label}</span>
@@ -247,21 +249,61 @@ function recentRowHTML(t) {
 
 // ---------- TRANSACTION DETAIL SHEET ----------
 let activeDetailId = null;
+let recentCardCache = [];
 
 document.getElementById("recentList").addEventListener("click", (e) => {
   const row = e.target.closest("[data-id]");
   if (!row) return;
-  openDetail(row.dataset.id);
+  if (row.dataset.kind === "card") {
+    const c = recentCardCache.find((x) => x.id === row.dataset.id);
+    if (c) openCardDetail(c);
+  } else {
+    openDetail(row.dataset.id);
+  }
 });
+
+function openCardDetail(c) {
+  document.getElementById("detailIcon").textContent = "💳";
+  document.getElementById("detailIconWrap").style.background = "#FF453A33";
+  const amtEl = document.getElementById("detailAmount");
+  amtEl.textContent = `-${money(c.amount)}`;
+  amtEl.className = "detail-amount expense";
+
+  document.getElementById("detailCategoryLabel").textContent = "Card";
+  document.getElementById("detailCategory").textContent = c.cards?.name || "Card";
+  document.getElementById("detailAccountLabel").textContent = "Deducted from";
+  document.getElementById("detailAccount").textContent = "Card balance (not an account)";
+  document.getElementById("detailDate").textContent = c.date;
+  document.getElementById("detailPeriod").textContent = "—";
+
+  const noteRow = document.getElementById("detailNoteRow");
+  if (c.detail) {
+    noteRow.classList.remove("hidden");
+    document.getElementById("detailNote").textContent = c.detail;
+  } else {
+    noteRow.classList.add("hidden");
+  }
+
+  document.getElementById("detailEditRow").classList.add("hidden");
+  document.getElementById("detailEditDateWrap").classList.add("hidden");
+  document.getElementById("detailEditNoteWrap").classList.add("hidden");
+  document.getElementById("detailSaveEdit").classList.add("hidden");
+  document.getElementById("detailEditToggle").classList.add("hidden");
+  document.getElementById("detailDelete").classList.add("hidden");
+  document.getElementById("detailManageCardLink").classList.remove("hidden");
+
+  document.getElementById("detailOverlay").classList.add("open");
+}
 
 function openDetail(id) {
   const t = recentCache.find((x) => x.id === id);
   if (!t) return;
   activeDetailId = id;
   const isIncome = t.type === "income";
-  const label = isIncome ? (t.source || "Income") : (t.categories?.name || "Expense");
-  const icon = isIncome ? "💰" : (t.categories?.icon || "🏷️");
-  const tint = isIncome ? "#30D15833" : colorFor(label) + "33";
+  const isTopUp = !isIncome && t.categories?.name === "Card Top-up";
+  const label = isIncome ? (t.source || "Income") : (isTopUp ? (t.note || "Card top up") : (t.categories?.name || "Expense"));
+  const icon = isIncome ? "💰" : (isTopUp ? "💳" : (t.categories?.icon || "🏷️"));
+  const tint = isIncome ? "#30D15833" : (isTopUp ? "#0A84FF33" : colorFor(label) + "33");
 
   document.getElementById("detailIcon").textContent = icon;
   document.getElementById("detailIconWrap").style.background = tint;
@@ -269,7 +311,9 @@ function openDetail(id) {
   amtEl.textContent = `${isIncome ? "+" : "-"}${money(t.amount)}`;
   amtEl.className = `detail-amount ${t.type}`;
 
+  document.getElementById("detailCategoryLabel").textContent = "Category";
   document.getElementById("detailCategory").textContent = label;
+  document.getElementById("detailAccountLabel").textContent = "Account";
   document.getElementById("detailAccount").textContent = t.accounts?.name || "—";
   document.getElementById("detailDate").textContent = t.date;
   document.getElementById("detailPeriod").textContent = t.time_period || "—";
@@ -287,6 +331,8 @@ function openDetail(id) {
   document.getElementById("detailEditNoteWrap").classList.add("hidden");
   document.getElementById("detailSaveEdit").classList.add("hidden");
   document.getElementById("detailEditToggle").classList.remove("hidden");
+  document.getElementById("detailDelete").classList.remove("hidden");
+  document.getElementById("detailManageCardLink").classList.add("hidden");
   document.getElementById("detailEditAmount").value = t.amount;
   document.getElementById("detailEditDate").value = t.date;
   document.getElementById("detailEditNote").value = t.note || "";
@@ -395,7 +441,7 @@ function openSpendFlow() {
   spendBack.style.visibility = "hidden";
   spendStepTitle.textContent = "Pick a category";
   spendOverlay.classList.add("open");
-  renderCategoryGrid(categoriesCache.filter((c) => !c.parent_id), true);
+  renderCategoryGrid(categoriesCache.filter((c) => !c.parent_id && !c.is_system), true);
   renderFrequentChips();
 }
 
@@ -412,7 +458,7 @@ document.getElementById("categoryGrid").addEventListener("click", (e) => {
 
   if (btn.dataset.special === "card") {
     spendOverlay.classList.remove("open");
-    window.location.href = "cards.html?action=spend";
+    window.location.href = "cards.html?action=topup";
     return;
   }
 
@@ -426,7 +472,7 @@ document.getElementById("categoryGrid").addEventListener("click", (e) => {
     spendStepTitle.textContent = name;
     spendBack.style.visibility = "visible";
     spendBack.onclick = () => {
-      renderCategoryGrid(categoriesCache.filter((c) => !c.parent_id), true);
+      renderCategoryGrid(categoriesCache.filter((c) => !c.parent_id && !c.is_system), true);
       spendStepTitle.textContent = "Pick a category";
       spendBack.style.visibility = "hidden";
     };
