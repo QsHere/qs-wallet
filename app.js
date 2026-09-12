@@ -169,11 +169,17 @@ async function loadCategories() {
   const { data, error } = await supabase.from("categories").select("*").order("name");
   if (error) { console.error(error); return; }
   categoriesCache = data;
-  renderCategoryGrid(data.filter((c) => !c.parent_id));
+  renderCategoryGrid(data.filter((c) => !c.parent_id), true);
 }
 
-function renderCategoryGrid(list) {
-  document.getElementById("categoryGrid").innerHTML = list
+function renderCategoryGrid(list, isTopLevel = false) {
+  const cardTile = isTopLevel
+    ? `<button class="category-btn" data-special="card">
+        <span class="category-tile" style="background:linear-gradient(135deg, #0A84FF33, #5E5CE633)">💳</span>
+        <span class="cat-label">Card</span>
+      </button>`
+    : "";
+  document.getElementById("categoryGrid").innerHTML = cardTile + list
     .map((c) => `<button class="category-btn" data-id="${c.id}" data-name="${c.name}" data-icon="${c.icon || "🏷️"}">
         <span class="category-tile" style="background:${colorFor(c.name)}33">${c.icon || "🏷️"}</span>
         <span class="cat-label">${c.name}</span>
@@ -182,17 +188,46 @@ function renderCategoryGrid(list) {
 }
 
 async function loadRecent() {
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("id, date, time_period, type, amount, source, note, account_id, category_id, accounts(name), categories(name, icon)")
-    .order("created_at", { ascending: false })
-    .limit(5);
-  if (error) { console.error(error); return; }
-  recentCache = data;
+  const [{ data: txData, error: txErr }, { data: cardData, error: cardErr }] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("id, date, time_period, type, amount, source, note, account_id, category_id, created_at, accounts(name), categories(name, icon)")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("card_activity")
+      .select("id, date, amount, type, detail, created_at, cards(name)")
+      .eq("type", "spend")
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ]);
+  if (txErr) console.error(txErr);
+  if (cardErr) console.error(cardErr);
 
-  document.getElementById("recentList").innerHTML = data.length
-    ? data.map(recentRowHTML).join("")
+  const combined = [
+    ...(txData || []).map((t) => ({ kind: "transaction", data: t, created_at: t.created_at })),
+    ...(cardData || []).map((c) => ({ kind: "card", data: c, created_at: c.created_at })),
+  ]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 5);
+
+  recentCache = (txData || []); // detail sheet lookups only apply to real transactions
+
+  document.getElementById("recentList").innerHTML = combined.length
+    ? combined.map((item) => (item.kind === "card" ? cardRecentRowHTML(item.data) : recentRowHTML(item.data)))
+        .join("")
     : `<li class="empty-note">No transactions yet — tap Spend or Income to add one.</li>`;
+}
+
+function cardRecentRowHTML(c) {
+  const label = c.detail || `${c.cards?.name || "Card"} spend`;
+  return `<li>
+    <span class="recent-left">
+      <span class="recent-icon" style="background:#FF453A33">💳</span>
+      <span class="recent-cat">${label}</span>
+    </span>
+    <span class="recent-amt expense">-${money(c.amount)}</span>
+  </li>`;
 }
 
 function recentRowHTML(t) {
@@ -360,7 +395,7 @@ function openSpendFlow() {
   spendBack.style.visibility = "hidden";
   spendStepTitle.textContent = "Pick a category";
   spendOverlay.classList.add("open");
-  renderCategoryGrid(categoriesCache.filter((c) => !c.parent_id));
+  renderCategoryGrid(categoriesCache.filter((c) => !c.parent_id), true);
   renderFrequentChips();
 }
 
@@ -374,17 +409,24 @@ document.getElementById("spendClose").addEventListener("click", () => {
 document.getElementById("categoryGrid").addEventListener("click", (e) => {
   const btn = e.target.closest(".category-btn");
   if (!btn) return;
+
+  if (btn.dataset.special === "card") {
+    spendOverlay.classList.remove("open");
+    window.location.href = "cards.html?action=spend";
+    return;
+  }
+
   const id = btn.dataset.id;
   const name = btn.dataset.name;
   const icon = btn.dataset.icon;
   const children = categoriesCache.filter((c) => c.parent_id === id);
 
   if (children.length > 0) {
-    renderCategoryGrid(children);
+    renderCategoryGrid(children, false);
     spendStepTitle.textContent = name;
     spendBack.style.visibility = "visible";
     spendBack.onclick = () => {
-      renderCategoryGrid(categoriesCache.filter((c) => !c.parent_id));
+      renderCategoryGrid(categoriesCache.filter((c) => !c.parent_id), true);
       spendStepTitle.textContent = "Pick a category";
       spendBack.style.visibility = "hidden";
     };

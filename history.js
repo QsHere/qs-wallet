@@ -141,7 +141,7 @@ calendarArea.addEventListener("touchend", (e) => {
 });
 
 // Swipe left/right on the summary section (below the calendar) navigates tabs instead
-enableTabSwipe({ prev: "index.html", next: "analytics.html", scope: "#historySummary" });
+enableTabSwipe({ prev: "index.html", next: "cards.html", scope: "#historySummary" });
 
 // ---------- Month/year picker ----------
 document.getElementById("monthLabel").addEventListener("click", () => {

@@ -412,4 +412,4 @@ loadAll();
   attachSwipeToDismiss(overlay, overlay.querySelector(".sheet-handle"), () => overlay.classList.remove("open"));
 });
 
-enableTabSwipe({ prev: "analytics.html", next: "settings.html" });
+enableTabSwipe({ prev: "cards.html", next: "settings.html" });

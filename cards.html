@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#000000" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="stylesheet" href="style.css" />
+<title>QS Wallet · Cards</title>
+</head>
+<body>
+
+  <main class="cards-page">
+    <h1 class="page-heading">Cards</h1>
+
+    <div class="card-stack-wrap">
+      <div class="card-stack" id="cardStack"></div>
+    </div>
+    <div class="card-dots" id="cardDots"></div>
+
+    <div class="card-actions" id="cardActions">
+      <button class="btn btn-income" id="cardTopUp">↑ Top Up</button>
+      <button class="btn btn-spend" id="cardSpendBtn">↓ Spend</button>
+    </div>
+    <p class="card-meta-row" id="cardMeta"></p>
+
+    <div id="cardActivitySection">
+      <div class="section-title-row">
+        <h2 class="section-title">Activity</h2>
+        <button class="tree-btn" id="editCardBtn">Edit card</button>
+      </div>
+      <ul class="grouped-list" id="cardActivityLog"></ul>
+    </div>
+  </main>
+
+  <button class="fab" id="openAddCard" title="Add card">+</button>
+
+  <!-- ADD / EDIT CARD SHEET -->
+  <div class="sheet-overlay" id="cardFormOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="cardFormTitle">Add card</span>
+        <button class="sheet-close" id="cardFormClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <label class="field-label">Name</label>
+        <input type="text" id="cardName" class="text-input" placeholder="e.g. MRT Card, IC, Gym Membership" />
+
+        <label class="field-label">Description (optional)</label>
+        <input type="text" id="cardDescription" class="text-input" placeholder="e.g. Touch 'n Go transit card" />
+
+        <label class="field-label">Expiry date (optional)</label>
+        <input type="date" id="cardExpiry" class="date-input" />
+
+        <label class="field-label">Card color</label>
+        <div class="swatch-row" id="cardSwatches"></div>
+
+        <label class="field-label">Track a balance for this card?</label>
+        <div class="pill-row">
+          <button type="button" class="pill selected" id="cardHasBalanceYes" data-has-balance="true">Yes — top up &amp; spend</button>
+          <button type="button" class="pill" id="cardHasBalanceNo" data-has-balance="false">No — reference only</button>
+        </div>
+
+        <div id="cardInitialBalanceWrap">
+          <label class="field-label">Starting balance</label>
+          <div class="amount-row">
+            <span class="amount-currency">RM</span>
+            <input type="number" inputmode="decimal" class="amount-input" id="cardInitialBalance" placeholder="0.00" />
+          </div>
+        </div>
+
+        <button class="btn-confirm" id="saveCard">Save card</button>
+        <button class="btn-secondary hidden" id="deleteCard">Delete this card</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP UP SHEET -->
+  <div class="sheet-overlay" id="topUpOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="topUpTitle">Top up</span>
+        <button class="sheet-close" id="topUpClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="amount-row">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="topUpAmount" placeholder="0.00" />
+        </div>
+
+        <label class="field-label">From</label>
+        <div class="pill-row" id="topUpAccountPills"></div>
+
+        <label class="field-label">Date</label>
+        <div class="pill-row" id="topUpDatePills">
+          <button type="button" class="pill" data-date="today">Today</button>
+          <button type="button" class="pill" data-date="yesterday">Yesterday</button>
+          <button type="button" class="pill" data-date="other">Other…</button>
+        </div>
+        <div class="date-input-wrap hidden" id="topUpDateWrap">
+          <input type="date" class="date-input" id="topUpDate" />
+        </div>
+
+        <button class="btn-confirm" id="confirmTopUp">Confirm top up</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD SPEND SHEET -->
+  <div class="sheet-overlay" id="cardSpendOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="cardSpendTitle">Spend</span>
+        <button class="sheet-close" id="cardSpendClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="amount-row">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="cardSpendAmount" placeholder="0.00" />
+        </div>
+
+        <label class="field-label">Detail (optional)</label>
+        <input type="text" id="cardSpendDetail" class="text-input" placeholder="e.g. Station A → Station B" />
+
+        <label class="field-label">Date</label>
+        <div class="pill-row" id="cardSpendDatePills">
+          <button type="button" class="pill" data-date="today">Today</button>
+          <button type="button" class="pill" data-date="yesterday">Yesterday</button>
+          <button type="button" class="pill" data-date="other">Other…</button>
+        </div>
+        <div class="date-input-wrap hidden" id="cardSpendDateWrap">
+          <input type="date" class="date-input" id="cardSpendDate" />
+        </div>
+
+        <button class="btn-confirm" id="confirmCardSpend">Confirm spend</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVITY EDIT SHEET -->
+  <div class="sheet-overlay" id="cardLogEditOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="cardLogEditTitle">Activity</span>
+        <button class="sheet-close" id="cardLogEditClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="amount-row">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="cardLogEditAmount" />
+        </div>
+        <label class="field-label">Date</label>
+        <input type="date" class="date-input" id="cardLogEditDate" />
+        <p class="hero-caption" id="cardLogEditHint" style="text-align:left; margin:10px 4px 0;"></p>
+
+        <button class="btn-confirm" id="cardLogEditSave">Save changes</button>
+        <button class="btn-secondary" id="cardLogEditDelete">Delete this activity</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="cards.js"></script>
+
+  <div class="tab-bar-wrap">
+    <nav class="tab-bar">
+      <a href="index.html" class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="history.html" class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        <span>History</span>
+      </a>
+      <a href="cards.html" class="tab-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
+        <span>Cards</span>
+      </a>
+      <a href="debts.html" class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h13M7 8l4-4M7 8l4 4"/><path d="M17 16H4M17 16l-4-4M17 16l4 4"/></svg>
+        <span>Debts</span>
+      </a>
+      <a href="settings.html" class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

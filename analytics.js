@@ -1,4 +1,4 @@
-import { supabase, money, colorFor, enableTabSwipe } from "./db.js";
+import { supabase, money, colorFor } from "./db.js";
 
 let categories = [];
 let expenses = [];
@@ -201,4 +201,3 @@ document.getElementById("rangeEnd").addEventListener("change", refresh);
   await refresh();
 })();
 
-enableTabSwipe({ prev: "history.html", next: "debts.html" });
