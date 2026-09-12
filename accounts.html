@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#000000" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="stylesheet" href="style.css" />
+<title>QS Wallet · Accounts</title>
+</head>
+<body>
+
+  <main class="settings-page">
+    <a href="settings.html" class="nav-back-inline">‹ Settings</a>
+    <h1 class="page-heading">Accounts</h1>
+
+    <ul class="grouped-list" id="accountsList"></ul>
+
+    <div class="add-row">
+      <input type="text" id="newAccountName" placeholder="New account name" class="text-input" />
+      <div class="amount-row" style="flex:none; width:110px; margin:0; padding:0; border:none;">
+        <span class="amount-currency" style="font-size:15px;">RM</span>
+        <input type="number" inputmode="decimal" id="newAccountBalance" placeholder="0.00" class="text-input" style="padding:8px 4px;" />
+      </div>
+      <button class="small-btn btn-confirm" id="addAccount">Add</button>
+    </div>
+
+    <button class="btn-confirm" id="openTransfer" style="margin-top:6px;">⇄ Transfer between accounts</button>
+
+    <h2 class="section-title" style="margin-top:28px;">Transfer history</h2>
+    <ul class="grouped-list" id="transferLog"></ul>
+  </main>
+
+  <!-- EDIT ACCOUNT NAME SHEET -->
+  <div class="sheet-overlay" id="editAccountOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span>Rename account</span>
+        <button class="sheet-close" id="editAccountClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <label class="field-label">Name</label>
+        <input type="text" id="editAccountName" class="text-input" />
+        <button class="btn-confirm" id="saveAccountName">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSFER SHEET -->
+  <div class="sheet-overlay" id="transferOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span>Transfer funds</span>
+        <button class="sheet-close" id="transferClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="amount-row">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="transferAmount" placeholder="0.00" />
+        </div>
+
+        <label class="field-label">From</label>
+        <div class="pill-row" id="transferFromPills"></div>
+
+        <label class="field-label">To</label>
+        <div class="pill-row" id="transferToPills"></div>
+
+        <label class="field-label">Date</label>
+        <div class="pill-row" id="transferDatePills">
+          <button type="button" class="pill" data-date="today">Today</button>
+          <button type="button" class="pill" data-date="yesterday">Yesterday</button>
+          <button type="button" class="pill" data-date="other">Other…</button>
+        </div>
+        <div class="date-input-wrap hidden" id="transferDateWrap">
+          <input type="date" class="date-input" id="transferDate" />
+        </div>
+
+        <label class="field-label">Note (optional)</label>
+        <input type="text" id="transferNote" class="text-input" placeholder="e.g. Topping up TNG" />
+
+        <button class="btn-confirm" id="confirmTransfer">Confirm transfer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT/DELETE TRANSFER SHEET -->
+  <div class="sheet-overlay" id="transferEditOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="transferEditTitle">Transfer</span>
+        <button class="sheet-close" id="transferEditClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="amount-row">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="transferEditAmount" />
+        </div>
+        <label class="field-label">Date</label>
+        <input type="date" class="date-input" id="transferEditDate" />
+
+        <button class="btn-confirm" id="transferEditSave">Save changes</button>
+        <button class="btn-secondary" id="transferEditDelete">Delete this transfer</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="accounts.js"></script>
+
+  <div class="tab-bar-wrap">
+    <nav class="tab-bar">
+      <a href="index.html" class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="history.html" class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        <span>History</span>
+      </a>
+      <a href="analytics.html" class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+        <span>Analytics</span>
+      </a>
+      <a href="debts.html" class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h13M7 8l4-4M7 8l4 4"/><path d="M17 16H4M17 16l-4-4M17 16l4 4"/></svg>
+        <span>Debts</span>
+      </a>
+      <a href="settings.html" class="tab-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>
