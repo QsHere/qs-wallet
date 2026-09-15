@@ -17,7 +17,7 @@ export function defaultPeriod() {
 
 // Deterministic accent color per name, so each category/person keeps a
 // consistent tile color across the app without needing manual assignment.
-const PALETTE = ["#FF453A", "#FF9F0A", "#FFD60A", "#30D158", "#64D2FF", "#0A84FF", "#5E5CE6", "#BF5AF2", "#FF375F"];
+const PALETTE = ["#D08272", "#D9A868", "#D9C15A", "#6FA98A", "#7FC4D0", "#7B9BC4", "#9B8FD9", "#B98FC7", "#D97690"];
 export function colorFor(text) {
   let hash = 0;
   for (let i = 0; i < text.length; i++) hash = text.charCodeAt(i) + ((hash << 5) - hash);

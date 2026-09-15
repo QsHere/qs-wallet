@@ -116,7 +116,7 @@ function logRowHTML(a) {
   const labels = { payment: "Payment", increase: "Added to balance", created: "Debt created" };
   const label = labels[a.type] || a.type;
   const sign = a.type === "payment" ? "-" : "+";
-  const tint = a.type === "payment" ? "#30D15833" : "#0A84FF33";
+  const tint = a.type === "payment" ? "#6FA98A33" : "#7B9BC433";
   const editable = a.type !== "created";
   return `<li class="${editable ? "tappable" : ""}" ${editable ? `data-log-id="${a.id}"` : ""}>
     <span class="row-left">

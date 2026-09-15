@@ -176,7 +176,7 @@ function accountName(id) {
 function transferRowHTML(t) {
   return `<li class="tappable" data-id="${t.id}">
     <span class="row-left">
-      <span class="row-icon" style="background:#0A84FF33">⇄</span>
+      <span class="row-icon" style="background:#7B9BC433">⇄</span>
       <span>
         <div class="row-title">${accountName(t.from_account_id)} → ${accountName(t.to_account_id)}</div>
         <div class="row-meta">${t.date}${t.note ? " · " + t.note : ""}</div>

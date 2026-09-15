@@ -1,12 +1,12 @@
 import { supabase, money, todayISO, attachSwipeToDismiss, enableTabSwipe } from "./db.js";
 
 const SWATCHES = [
-  ["#0A84FF", "#5E5CE6"],
-  ["#FF9F0A", "#FF375F"],
-  ["#30D158", "#0A84FF"],
-  ["#FF375F", "#FF9F0A"],
-  ["#2C2C2E", "#000000"],
-  ["#BF5AF2", "#FF375F"],
+  ["#7B9BC4", "#9B8FD9"],
+  ["#D9A868", "#D97690"],
+  ["#6FA98A", "#7B9BC4"],
+  ["#D97690", "#D9A868"],
+  ["#5C5548", "#3A342C"],
+  ["#B98FC7", "#D97690"],
 ];
 
 let cards = [];
@@ -157,6 +157,7 @@ document.getElementById("openAddCard").addEventListener("click", () => {
   document.getElementById("cardName").value = "";
   document.getElementById("cardDescription").value = "";
   document.getElementById("cardExpiry").value = "";
+  document.getElementById("cardInitialBalanceLabel").textContent = "Starting balance";
   document.getElementById("cardInitialBalance").value = "";
   document.getElementById("deleteCard").classList.add("hidden");
   document.getElementById("cardInitialBalanceWrap").classList.remove("hidden");
@@ -174,7 +175,9 @@ document.getElementById("editCardBtn").addEventListener("click", () => {
   document.getElementById("cardName").value = c.name;
   document.getElementById("cardDescription").value = c.description || "";
   document.getElementById("cardExpiry").value = c.expiry_date || "";
-  document.getElementById("cardInitialBalanceWrap").classList.add("hidden"); // balance managed via top-up/spend after creation
+  document.getElementById("cardInitialBalanceLabel").textContent = "Balance (edit to correct it)";
+  document.getElementById("cardInitialBalance").value = c.balance;
+  document.getElementById("cardInitialBalanceWrap").classList.toggle("hidden", !c.has_balance);
   document.getElementById("deleteCard").classList.remove("hidden");
   setHasBalance(c.has_balance);
   renderSwatches();
@@ -193,8 +196,9 @@ document.getElementById("saveCard").addEventListener("click", async () => {
   const has_balance = document.getElementById("cardHasBalanceYes").classList.contains("selected");
 
   if (editingCardId) {
+    const updatedBalance = has_balance ? (parseFloat(document.getElementById("cardInitialBalance").value) || 0) : 0;
     await supabase.from("cards").update({
-      name, description, expiry_date, has_balance,
+      name, description, expiry_date, has_balance, balance: updatedBalance,
       color_from: chosenColor[0], color_to: chosenColor[1],
     }).eq("id", editingCardId);
   } else {
@@ -358,7 +362,7 @@ function logRowHTML(a) {
   const isTopup = a.type === "topup";
   const label = isTopup ? "Top up" : (a.detail || "Spend");
   const sign = isTopup ? "+" : "-";
-  const tint = isTopup ? "#30D15833" : "#FF453A33";
+  const tint = isTopup ? "#6FA98A33" : "#D0827233";
   return `<li class="tappable" data-log-id="${a.id}">
     <span class="row-left">
       <span class="row-icon" style="background:${tint}">${isTopup ? "↑" : "↓"}</span>

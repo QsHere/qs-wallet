@@ -102,13 +102,13 @@ function render() {
 
   const labels = items.map((i) => i.name);
   const values = items.map((i) => i.total);
-  const colors = items.map((i) => (i.id ? colorFor(i.name) : "#636366"));
+  const colors = items.map((i) => (i.id ? colorFor(i.name) : "#A39A8C"));
 
   if (chart) chart.destroy();
   const ctx = document.getElementById("pieChart").getContext("2d");
   chart = new Chart(ctx, {
     type: "pie",
-    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: "#000000", borderWidth: 2 }] },
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: "#F7F4EF", borderWidth: 2 }] },
     options: {
       plugins: { legend: { display: false } },
       onClick: (evt, elements) => {

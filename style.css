@@ -1,22 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --bg: #000000;
-  --bg-elevated: #1C1C1E;
-  --bg-elevated-2: #2C2C2E;
-  --bg-elevated-3: #3A3A3C;
-  --separator: rgba(255,255,255,0.11);
-  --label: #FFFFFF;
-  --label-secondary: #98989F;
-  --label-tertiary: #636366;
-  --green: #30D158;
-  --green-dim: rgba(48, 209, 88, 0.16);
-  --red: #FF453A;
-  --red-dim: rgba(255, 69, 58, 0.16);
-  --blue: #0A84FF;
-  --blue-dim: rgba(10, 132, 255, 0.16);
-  --orange: #FF9F0A;
-  --orange-dim: rgba(255, 159, 10, 0.16);
+  --bg: #F7F4EF;
+  --bg-elevated: #FFFFFF;
+  --bg-elevated-2: #F0ECE4;
+  --bg-elevated-3: #E4DED2;
+  --separator: rgba(60, 50, 40, 0.09);
+  --label: #3A342C;
+  --label-secondary: #8A8074;
+  --label-tertiary: #B3AA9C;
+  --green: #6FA98A;
+  --green-dim: rgba(111, 169, 138, 0.16);
+  --red: #D08272;
+  --red-dim: rgba(208, 130, 114, 0.16);
+  --blue: #7B9BC4;
+  --blue-dim: rgba(123, 155, 196, 0.16);
+  --orange: #D9A868;
+  --orange-dim: rgba(217, 168, 104, 0.18);
 
   --spring: cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -98,7 +98,7 @@ a { -webkit-tap-highlight-color: transparent; }
   justify-content: space-between;
   max-width: 480px;
   margin: 0 auto;
-  background: rgba(0,0,0,0.72);
+  background: rgba(247,244,239,0.78);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
@@ -136,7 +136,7 @@ a { -webkit-tap-highlight-color: transparent; }
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(0,0,0,0.78);
+  background: rgba(247,244,239,0.82);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-top: 1px solid var(--separator);
@@ -362,12 +362,12 @@ a { -webkit-tap-highlight-color: transparent; }
   background: rgba(255,255,255,0.2);
 }
 
-.btn-spend { background: var(--red); color: #fff; }
-.btn-income { background: var(--green); color: #04210c; }
+.btn-spend { background: var(--red); color: var(--label); }
+.btn-income { background: var(--green); color: var(--label); }
 
 .btn-confirm {
   background: var(--green);
-  color: #04210c;
+  color: var(--label);
   width: 100%;
   margin-top: 26px;
   padding: 17px 0;
@@ -663,7 +663,7 @@ a { -webkit-tap-highlight-color: transparent; }
   gap: 6px;
 }
 
-.pill.selected { background: var(--green); color: #04210c; font-weight: 700; }
+.pill.selected { background: var(--green); color: var(--label); font-weight: 700; }
 .pill .pill-icon { font-size: 15px; }
 
 .date-input-wrap { margin-top: 10px; }

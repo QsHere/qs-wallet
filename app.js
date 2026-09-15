@@ -172,14 +172,20 @@ async function loadCategories() {
   renderCategoryGrid(data.filter((c) => !c.parent_id && !c.is_system), true);
 }
 
-function renderCategoryGrid(list, isTopLevel = false) {
+function renderCategoryGrid(list, isTopLevel = false, selfOption = null) {
   const cardTile = isTopLevel
     ? `<button class="category-btn" data-special="card">
-        <span class="category-tile" style="background:linear-gradient(135deg, #0A84FF33, #5E5CE633)">💳</span>
+        <span class="category-tile" style="background:linear-gradient(135deg, #7B9BC433, #9B8FD933)">💳</span>
         <span class="cat-label">Card</span>
       </button>`
     : "";
-  document.getElementById("categoryGrid").innerHTML = cardTile + list
+  const selfTile = selfOption
+    ? `<button class="category-btn" data-id="${selfOption.id}" data-name="${selfOption.name}" data-icon="${selfOption.icon}" data-self="true">
+        <span class="category-tile" style="background:${colorFor(selfOption.name)}33">✅</span>
+        <span class="cat-label">General ${selfOption.name}</span>
+      </button>`
+    : "";
+  document.getElementById("categoryGrid").innerHTML = cardTile + selfTile + list
     .map((c) => `<button class="category-btn" data-id="${c.id}" data-name="${c.name}" data-icon="${c.icon || "🏷️"}">
         <span class="category-tile" style="background:${colorFor(c.name)}33">${c.icon || "🏷️"}</span>
         <span class="cat-label">${c.name}</span>
@@ -224,7 +230,7 @@ function cardRecentRowHTML(c) {
   const label = c.detail || `${c.cards?.name || "Card"} spend`;
   return `<li class="tappable" data-id="${c.id}" data-kind="card">
     <span class="recent-left">
-      <span class="recent-icon" style="background:#FF453A33">💳</span>
+      <span class="recent-icon" style="background:#D0827233">💳</span>
       <span class="recent-cat">${label}</span>
     </span>
     <span class="recent-amt expense">-${money(c.amount)}</span>
@@ -236,7 +242,7 @@ function recentRowHTML(t) {
   const isTopUp = !isIncome && t.categories?.name === "Card Top-up";
   const label = isIncome ? (t.source || "Income") : (isTopUp ? (t.note || "Card top up") : (t.categories?.name || "Expense"));
   const icon = isIncome ? "💰" : (isTopUp ? "💳" : (t.categories?.icon || "🏷️"));
-  const tint = isIncome ? "#30D15833" : (isTopUp ? "#0A84FF33" : colorFor(label) + "33");
+  const tint = isIncome ? "#6FA98A33" : (isTopUp ? "#7B9BC433" : colorFor(label) + "33");
   const sign = isIncome ? "+" : "-";
   return `<li class="tappable" data-id="${t.id}" data-kind="transaction">
     <span class="recent-left">
@@ -264,7 +270,7 @@ document.getElementById("recentList").addEventListener("click", (e) => {
 
 function openCardDetail(c) {
   document.getElementById("detailIcon").textContent = "💳";
-  document.getElementById("detailIconWrap").style.background = "#FF453A33";
+  document.getElementById("detailIconWrap").style.background = "#D0827233";
   const amtEl = document.getElementById("detailAmount");
   amtEl.textContent = `-${money(c.amount)}`;
   amtEl.className = "detail-amount expense";
@@ -303,7 +309,7 @@ function openDetail(id) {
   const isTopUp = !isIncome && t.categories?.name === "Card Top-up";
   const label = isIncome ? (t.source || "Income") : (isTopUp ? (t.note || "Card top up") : (t.categories?.name || "Expense"));
   const icon = isIncome ? "💰" : (isTopUp ? "💳" : (t.categories?.icon || "🏷️"));
-  const tint = isIncome ? "#30D15833" : (isTopUp ? "#0A84FF33" : colorFor(label) + "33");
+  const tint = isIncome ? "#6FA98A33" : (isTopUp ? "#7B9BC433" : colorFor(label) + "33");
 
   document.getElementById("detailIcon").textContent = icon;
   document.getElementById("detailIconWrap").style.background = tint;
@@ -465,10 +471,16 @@ document.getElementById("categoryGrid").addEventListener("click", (e) => {
   const id = btn.dataset.id;
   const name = btn.dataset.name;
   const icon = btn.dataset.icon;
+
+  if (btn.dataset.self === "true") {
+    selectLeafCategory(id, name, icon);
+    return;
+  }
+
   const children = categoriesCache.filter((c) => c.parent_id === id);
 
   if (children.length > 0) {
-    renderCategoryGrid(children, false);
+    renderCategoryGrid(children, false, { id, name, icon });
     spendStepTitle.textContent = name;
     spendBack.style.visibility = "visible";
     spendBack.onclick = () => {
