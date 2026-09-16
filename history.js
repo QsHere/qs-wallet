@@ -205,7 +205,7 @@ function rowHTML(t) {
       <span class="row-icon" style="background:${tint}">${icon}</span>
       <span>
         <div class="row-title">${label}</div>
-        <div class="row-meta">${t.accounts?.name || ""}${t.time_period ? " · " + t.time_period : ""}</div>
+        ${t.note ? `<div class="row-meta">${t.note}</div>` : ""}
       </span>
     </span>
     <span class="row-amt ${t.type}">${sign}${money(t.amount)}</span>

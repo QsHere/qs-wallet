@@ -1316,3 +1316,51 @@ a { -webkit-tap-highlight-color: transparent; }
   margin-bottom: 4px;
 }
 .toggle-row .collapse-toggle { flex: 1; }
+
+/* ---------- Wallet chips (Home: Accounts & Debts redesign) ---------- */
+.wallet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.wallet-chip {
+  background: var(--bg-elevated);
+  border-radius: 14px;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-shadow: 0 1px 4px rgba(60, 50, 40, 0.07);
+}
+
+.wallet-chip-icon { font-size: 17px; }
+.wallet-chip-name {
+  font-size: 10.5px;
+  color: var(--label-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.wallet-chip-amt {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--label);
+  font-variant-numeric: tabular-nums;
+}
+
+.debts-chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-elevated);
+  border-radius: 14px;
+  padding: 13px 14px;
+  text-decoration: none;
+  box-shadow: 0 1px 4px rgba(60, 50, 40, 0.07);
+  font-size: 13px;
+  color: var(--label-secondary);
+}
+.debts-chip b.owed-to-you { color: var(--green); font-weight: 700; }
+.debts-chip b.you-owe { color: var(--red); font-weight: 700; }

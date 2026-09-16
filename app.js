@@ -41,8 +41,17 @@ async function loadDebtsSummary() {
   const owedToYou = data.filter((d) => d.direction === "owed_to_me").reduce((s, d) => s + Number(d.balance), 0);
   const youOwe = data.filter((d) => d.direction === "i_owe").reduce((s, d) => s + Number(d.balance), 0);
   const el = document.getElementById("debtsSummary");
-  if (owedToYou === 0 && youOwe === 0) { el.innerHTML = ""; return; }
-  el.innerHTML = `<a href="debts.html">🤝 Owed to you: <b class="owed-to-you">${money(owedToYou)}</b> · You owe: <b class="you-owe">${money(youOwe)}</b></a>`;
+  if (owedToYou === 0 && youOwe === 0) { el.style.display = "none"; return; }
+  el.style.display = "flex";
+  el.innerHTML = `<span>🤝 Owed to you / You owe</span><span><b class="owed-to-you">${money(owedToYou)}</b> · <b class="you-owe">${money(youOwe)}</b></span>`;
+}
+
+function iconForAccount(name) {
+  const n = name.toLowerCase();
+  if (n.includes("cash")) return "💵";
+  if (n.includes("tng") || n.includes("wallet")) return "📱";
+  if (n.includes("bank")) return "🏦";
+  return "💳";
 }
 
 async function loadBalances() {
@@ -51,7 +60,11 @@ async function loadBalances() {
   accountsCache = data;
 
   document.getElementById("balances").innerHTML = data
-    .map((a) => `<span>${a.name}: <b>${money(a.balance)}</b></span>`)
+    .map((a) => `<div class="wallet-chip">
+        <span class="wallet-chip-icon">${iconForAccount(a.name)}</span>
+        <span class="wallet-chip-name">${a.name}</span>
+        <span class="wallet-chip-amt">${money(a.balance)}</span>
+      </div>`)
     .join("");
 
   const bank = data.find((a) => a.name === "Bank");
@@ -179,6 +192,10 @@ function renderCategoryGrid(list, isTopLevel = false, selfOption = null) {
         <span class="cat-label">Card</span>
       </button>`
     : "";
+  const manageTile = `<button class="category-btn" data-special="manage-categories">
+        <span class="category-tile" style="background:var(--bg-elevated-2); border:1.5px dashed var(--bg-elevated-3);">➕</span>
+        <span class="cat-label">Add / Edit</span>
+      </button>`;
   const selfTile = selfOption
     ? `<button class="category-btn" data-id="${selfOption.id}" data-name="${selfOption.name}" data-icon="${selfOption.icon}" data-self="true">
         <span class="category-tile" style="background:${colorFor(selfOption.name)}33">✅</span>
@@ -190,7 +207,7 @@ function renderCategoryGrid(list, isTopLevel = false, selfOption = null) {
         <span class="category-tile" style="background:${colorFor(c.name)}33">${c.icon || "🏷️"}</span>
         <span class="cat-label">${c.name}</span>
       </button>`)
-    .join("");
+    .join("") + manageTile;
 }
 
 async function loadRecent() {
@@ -465,6 +482,12 @@ document.getElementById("categoryGrid").addEventListener("click", (e) => {
   if (btn.dataset.special === "card") {
     spendOverlay.classList.remove("open");
     window.location.href = "cards.html?action=topup";
+    return;
+  }
+
+  if (btn.dataset.special === "manage-categories") {
+    spendOverlay.classList.remove("open");
+    window.location.href = "categories.html";
     return;
   }
 

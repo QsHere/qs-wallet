@@ -62,12 +62,17 @@ document.getElementById("toggleDebtVisibility").addEventListener("click", () => 
 });
 
 function rowHTML(d, kind) {
+  const today = new Date().toISOString().slice(0, 10);
+  const isOverdue = d.deadline_date && d.deadline_date < today;
+  const metaParts = [];
+  if (d.note) metaParts.push(d.note);
+  if (d.deadline_date) metaParts.push(`${isOverdue ? "⚠️ Overdue" : "Due"} ${d.deadline_date}`);
   return `<li class="tappable" data-id="${d.id}">
     <span class="row-left">
       <span class="row-icon" style="background:${colorFor(d.person)}33">${d.person.slice(0, 1).toUpperCase()}</span>
       <span>
         <div class="row-title">${d.person}</div>
-        ${d.note ? `<div class="row-meta">${d.note}</div>` : ""}
+        ${metaParts.length ? `<div class="row-meta">${metaParts.join(" · ")}</div>` : ""}
       </span>
     </span>
     <span class="row-amt ${kind}">${maskedMoney(d.balance)}</span>
@@ -90,7 +95,13 @@ function openActionSheet(id) {
   const d = debts.find((x) => x.id === id);
   document.getElementById("debtActionTitle").textContent = d.person;
   const label = d.direction === "owed_to_me" ? "owes you" : "you owe";
-  document.getElementById("debtActionBalance").textContent = `${label} ${maskedMoney(d.balance)}`;
+  let text = `${label} ${maskedMoney(d.balance)}`;
+  if (d.deadline_date) {
+    const today = new Date().toISOString().slice(0, 10);
+    const overdue = d.deadline_date < today;
+    text += ` · ${overdue ? "⚠️ Overdue since" : "Due"} ${d.deadline_date}`;
+  }
+  document.getElementById("debtActionBalance").textContent = text;
   document.getElementById("debtActionOverlay").classList.add("open");
   loadLog(id);
 }
@@ -284,11 +295,12 @@ document.getElementById("confirmAddDebt").addEventListener("click", async () => 
   const person = document.getElementById("debtPerson").value.trim();
   const amount = parseFloat(document.getElementById("debtAmount").value);
   const note = document.getElementById("debtNote").value.trim() || null;
+  const deadline_date = document.getElementById("debtDeadline").value || null;
   if (!person || !amount || amount <= 0) return;
 
   const { data, error } = await supabase
     .from("debts")
-    .insert({ person, direction: addDirection, balance: amount, note })
+    .insert({ person, direction: addDirection, balance: amount, note, deadline_date })
     .select()
     .single();
 
@@ -297,6 +309,7 @@ document.getElementById("confirmAddDebt").addEventListener("click", async () => 
   }
 
   document.getElementById("addDebtOverlay").classList.remove("open");
+  document.getElementById("debtDeadline").value = "";
   document.getElementById("debtPerson").value = "";
   document.getElementById("debtAmount").value = "";
   document.getElementById("debtNote").value = "";

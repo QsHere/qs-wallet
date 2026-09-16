@@ -246,4 +246,9 @@ document.getElementById("transferEditDelete").addEventListener("click", async ()
   attachSwipeToDismiss(overlay, overlay.querySelector(".sheet-handle"), () => overlay.classList.remove("open"));
 });
 
-loadAll();
+loadAll().then(() => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("action") === "transfer") {
+    document.getElementById("openTransfer").click();
+  }
+});
