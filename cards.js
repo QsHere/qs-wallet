@@ -39,7 +39,7 @@ function activeCard() {
 
 async function loadAll() {
   const [{ data: cardData, error: cardErr }, { data: accData, error: accErr }] = await Promise.all([
-    supabase.from("cards").select("*").order("created_at", { ascending: true }),
+    supabase.from("cards").select("*").order("sort_order", { ascending: true }),
     supabase.from("accounts").select("*").order("name"),
   ]);
   if (cardErr) console.error(cardErr);
@@ -160,6 +160,7 @@ document.getElementById("openAddCard").addEventListener("click", () => {
   document.getElementById("cardInitialBalanceLabel").textContent = "Starting balance";
   document.getElementById("cardInitialBalance").value = "";
   document.getElementById("deleteCard").classList.add("hidden");
+  document.getElementById("cardReorderRow").classList.add("hidden");
   document.getElementById("cardInitialBalanceWrap").classList.remove("hidden");
   setHasBalance(true);
   renderSwatches();
@@ -179,9 +180,43 @@ document.getElementById("editCardBtn").addEventListener("click", () => {
   document.getElementById("cardInitialBalance").value = c.balance;
   document.getElementById("cardInitialBalanceWrap").classList.toggle("hidden", !c.has_balance);
   document.getElementById("deleteCard").classList.remove("hidden");
+  document.getElementById("cardReorderRow").classList.remove("hidden");
   setHasBalance(c.has_balance);
   renderSwatches();
   document.getElementById("cardFormOverlay").classList.add("open");
+});
+
+function scrollToActiveCard() {
+  requestAnimationFrame(() => {
+    const el = stackEl.querySelectorAll(".virtual-card")[activeIndex];
+    if (el) el.scrollIntoView({ behavior: "instant", inline: "center", block: "nearest" });
+  });
+}
+
+document.getElementById("moveCardEarlier").addEventListener("click", async () => {
+  const idx = cards.findIndex((c) => c.id === editingCardId);
+  if (idx <= 0) return;
+  const current = cards[idx];
+  const prev = cards[idx - 1];
+  await supabase.from("cards").update({ sort_order: prev.sort_order }).eq("id", current.id);
+  await supabase.from("cards").update({ sort_order: current.sort_order }).eq("id", prev.id);
+  activeIndex = idx - 1;
+  document.getElementById("cardFormOverlay").classList.remove("open");
+  await loadAll();
+  scrollToActiveCard();
+});
+
+document.getElementById("moveCardLater").addEventListener("click", async () => {
+  const idx = cards.findIndex((c) => c.id === editingCardId);
+  if (idx === -1 || idx >= cards.length - 1) return;
+  const current = cards[idx];
+  const next = cards[idx + 1];
+  await supabase.from("cards").update({ sort_order: next.sort_order }).eq("id", current.id);
+  await supabase.from("cards").update({ sort_order: current.sort_order }).eq("id", next.id);
+  activeIndex = idx + 1;
+  document.getElementById("cardFormOverlay").classList.remove("open");
+  await loadAll();
+  scrollToActiveCard();
 });
 
 document.getElementById("cardFormClose").addEventListener("click", () => {
@@ -203,9 +238,11 @@ document.getElementById("saveCard").addEventListener("click", async () => {
     }).eq("id", editingCardId);
   } else {
     const balance = has_balance ? (parseFloat(document.getElementById("cardInitialBalance").value) || 0) : 0;
+    const maxOrder = cards.reduce((m, c) => Math.max(m, c.sort_order || 0), 0);
     await supabase.from("cards").insert({
       name, description, expiry_date, has_balance, balance,
       color_from: chosenColor[0], color_to: chosenColor[1],
+      sort_order: maxOrder + 1,
     });
   }
 

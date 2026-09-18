@@ -106,6 +106,8 @@
         </div>
         <label class="field-label">Date</label>
         <input type="date" class="date-input" id="logEditDate" />
+        <label class="field-label">Note</label>
+        <input type="text" id="logEditNote" class="text-input" placeholder="Add a note" />
         <p class="hero-caption" id="logEditHint" style="text-align:left; margin:10px 4px 0;"></p>
 
         <button class="btn-confirm" id="logEditSave">Save changes</button>
@@ -129,6 +131,8 @@
           <input type="number" inputmode="decimal" class="amount-input" id="increaseAmount" placeholder="0.00" />
         </div>
         <p class="hero-caption" id="increaseHint" style="text-align:left; margin-top:0;"></p>
+        <label class="field-label">Note (optional)</label>
+        <input type="text" id="increaseNote" class="text-input" placeholder="e.g. Borrowed extra for emergency" />
         <button class="btn-confirm" id="confirmIncrease">Add to balance</button>
       </div>
     </div>
@@ -161,6 +165,9 @@
         <div class="date-input-wrap hidden" id="paymentDateWrap">
           <input type="date" class="date-input" id="paymentDate" />
         </div>
+
+        <label class="field-label">Note (optional)</label>
+        <input type="text" id="paymentNote" class="text-input" placeholder="e.g. Partial payment for August" />
 
         <button class="btn-confirm" id="confirmPayment">Confirm payment</button>
       </div>

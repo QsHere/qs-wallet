@@ -330,9 +330,43 @@ a { -webkit-tap-highlight-color: transparent; }
 .debts-summary b.owed-to-you { color: var(--green); font-weight: 600; }
 .debts-summary b.you-owe { color: var(--red); font-weight: 600; }
 
+.debts-split {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.debts-chip {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--bg-elevated);
+  border-radius: 14px;
+  padding: 12px 14px;
+  text-decoration: none;
+  box-shadow: 0 1px 4px rgba(60, 50, 40, 0.07);
+  font-size: 11px;
+  color: var(--label-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.debts-chip .debts-chip-amt {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.debts-chip.owed .debts-chip-amt { color: var(--green); }
+.debts-chip.owe .debts-chip-amt { color: var(--red); }
+
 .actions {
   display: flex;
   gap: 12px;
+  margin-top: 18px;
   margin-bottom: 34px;
 }
 

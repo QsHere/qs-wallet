@@ -125,7 +125,7 @@ async function loadLog(debtId) {
 
 function logRowHTML(a) {
   const labels = { payment: "Payment", increase: "Added to balance", created: "Debt created" };
-  const label = labels[a.type] || a.type;
+  const label = a.note || labels[a.type] || a.type;
   const sign = a.type === "payment" ? "-" : "+";
   const tint = a.type === "payment" ? "#6FA98A33" : "#7B9BC433";
   const editable = a.type !== "created";
@@ -155,6 +155,7 @@ function openLogEdit(logId) {
   document.getElementById("logEditTitle").textContent = labels[entry.type] || entry.type;
   document.getElementById("logEditAmount").value = entry.amount;
   document.getElementById("logEditDate").value = entry.date;
+  document.getElementById("logEditNote").value = entry.note || "";
   document.getElementById("logEditHint").textContent = entry.type === "payment"
     ? "Editing or deleting this will also update the linked account balance and transaction."
     : "This only affects the debt balance — no account is linked to this entry.";
@@ -194,7 +195,8 @@ document.getElementById("logEditSave").addEventListener("click", async () => {
     }
   }
 
-  await supabase.from("debt_activity").update({ amount: newAmount, date: newDate }).eq("id", entry.id);
+  const newNote = document.getElementById("logEditNote").value.trim() || null;
+  await supabase.from("debt_activity").update({ amount: newAmount, date: newDate, note: newNote }).eq("id", entry.id);
 
   document.getElementById("logEditOverlay").classList.remove("open");
   await loadAll();
@@ -254,6 +256,7 @@ document.getElementById("openIncreaseDebt").addEventListener("click", () => {
   document.getElementById("increaseHint").textContent = d.direction === "owed_to_me"
     ? "This adds to how much they owe you. It won't touch your account balances — only a payment does that."
     : "This adds to how much you owe them. It won't touch your account balances — only a payment does that.";
+  document.getElementById("increaseNote").value = "";
   document.getElementById("increaseAmount").value = "";
   document.getElementById("increaseOverlay").classList.add("open");
 });
@@ -265,13 +268,15 @@ document.getElementById("increaseClose").addEventListener("click", () => {
 document.getElementById("confirmIncrease").addEventListener("click", async () => {
   const amount = parseFloat(document.getElementById("increaseAmount").value);
   if (!amount || amount <= 0) return;
+  const note = document.getElementById("increaseNote").value.trim() || null;
   const d = debts.find((x) => x.id === activeDebtId);
 
   const newBalance = Number(d.balance) + amount;
   await supabase.from("debts").update({ balance: newBalance }).eq("id", d.id);
-  await supabase.from("debt_activity").insert({ debt_id: d.id, date: todayISO(), amount, type: "increase" });
+  await supabase.from("debt_activity").insert({ debt_id: d.id, date: todayISO(), amount, type: "increase", note });
 
   document.getElementById("increaseOverlay").classList.remove("open");
+  document.getElementById("increaseNote").value = "";
   await loadAll();
 });
 
@@ -323,6 +328,7 @@ document.getElementById("openRecordPayment").addEventListener("click", () => {
 
   document.getElementById("paymentTitle").textContent = `Payment ${d.direction === "owed_to_me" ? "from" : "to"} ${d.person}`;
   document.getElementById("paymentAccountLabel").textContent = d.direction === "owed_to_me" ? "Goes into" : "Paid from";
+  document.getElementById("paymentNote").value = "";
 
   const container = document.getElementById("paymentAccountPills");
   const defaultAcc = accounts.find((a) => a.name === "TNG Wallet") || accounts[0];
@@ -381,6 +387,7 @@ document.getElementById("paymentClose").addEventListener("click", () => {
 document.getElementById("confirmPayment").addEventListener("click", async () => {
   const amount = parseFloat(document.getElementById("paymentAmount").value);
   if (!amount || amount <= 0) return;
+  const note = document.getElementById("paymentNote").value.trim() || null;
   const d = debts.find((x) => x.id === activeDebtId);
   const accountId = paymentState.accountId;
   const account = accounts.find((a) => a.id === accountId);
@@ -394,14 +401,14 @@ document.getElementById("confirmPayment").addEventListener("click", async () => 
   if (d.direction === "owed_to_me") {
     const { data: tx } = await supabase.from("transactions").insert({
       date: paymentState.date, type: "income", amount, account_id: accountId,
-      source: `Repayment from ${d.person}`,
+      source: note ? `Repayment from ${d.person}: ${note}` : `Repayment from ${d.person}`,
     }).select().single();
     transactionId = tx?.id || null;
     await supabase.from("accounts").update({ balance: Number(account.balance) + amount }).eq("id", accountId);
   } else {
     const { data: tx } = await supabase.from("transactions").insert({
       date: paymentState.date, type: "expense", amount, account_id: accountId,
-      note: `Repayment to ${d.person}`,
+      note: note ? `Repayment to ${d.person}: ${note}` : `Repayment to ${d.person}`,
     }).select().single();
     transactionId = tx?.id || null;
     await supabase.from("accounts").update({ balance: Number(account.balance) - amount }).eq("id", accountId);
@@ -410,10 +417,11 @@ document.getElementById("confirmPayment").addEventListener("click", async () => 
   // 3. Log the activity, linked to the transaction/account so it can be edited or undone later
   await supabase.from("debt_activity").insert({
     debt_id: d.id, date: paymentState.date, amount, type: "payment",
-    transaction_id: transactionId, account_id: accountId,
+    transaction_id: transactionId, account_id: accountId, note,
   });
 
   document.getElementById("paymentOverlay").classList.remove("open");
+  document.getElementById("paymentNote").value = "";
   await loadAll();
 });
 

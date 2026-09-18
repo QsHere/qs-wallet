@@ -40,10 +40,18 @@ async function loadDebtsSummary() {
   if (error) { console.error(error); return; }
   const owedToYou = data.filter((d) => d.direction === "owed_to_me").reduce((s, d) => s + Number(d.balance), 0);
   const youOwe = data.filter((d) => d.direction === "i_owe").reduce((s, d) => s + Number(d.balance), 0);
-  const el = document.getElementById("debtsSummary");
-  if (owedToYou === 0 && youOwe === 0) { el.style.display = "none"; return; }
-  el.style.display = "flex";
-  el.innerHTML = `<span>🤝 Owed to you / You owe</span><span><b class="owed-to-you">${money(owedToYou)}</b> · <b class="you-owe">${money(youOwe)}</b></span>`;
+
+  const owedEl = document.getElementById("owedToYouChip");
+  const oweEl = document.getElementById("youOweChip");
+  const container = document.querySelector(".debts-split");
+
+  if (owedToYou === 0 && youOwe === 0) {
+    container.style.display = "none";
+    return;
+  }
+  container.style.display = "flex";
+  owedEl.innerHTML = `<span>Owed to you</span><span class="debts-chip-amt">${money(owedToYou)}</span>`;
+  oweEl.innerHTML = `<span>You owe</span><span class="debts-chip-amt">${money(youOwe)}</span>`;
 }
 
 function iconForAccount(name) {
@@ -261,10 +269,14 @@ function recentRowHTML(t) {
   const icon = isIncome ? "💰" : (isTopUp ? "💳" : (t.categories?.icon || "🏷️"));
   const tint = isIncome ? "#6FA98A33" : (isTopUp ? "#7B9BC433" : colorFor(label) + "33");
   const sign = isIncome ? "+" : "-";
+  const showNote = !isTopUp && t.note;
   return `<li class="tappable" data-id="${t.id}" data-kind="transaction">
     <span class="recent-left">
       <span class="recent-icon" style="background:${tint}">${icon}</span>
-      <span class="recent-cat">${label}</span>
+      <span>
+        <div class="recent-cat">${label}</div>
+        ${showNote ? `<div class="recent-meta">${t.note}</div>` : ""}
+      </span>
     </span>
     <span class="recent-amt ${t.type}">${sign}${money(t.amount)}</span>
   </li>`;
