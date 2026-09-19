@@ -125,16 +125,17 @@ async function loadLog(debtId) {
 
 function logRowHTML(a) {
   const labels = { payment: "Payment", increase: "Added to balance", created: "Debt created" };
-  const label = a.note || labels[a.type] || a.type;
+  const label = labels[a.type] || a.type;
   const sign = a.type === "payment" ? "-" : "+";
   const tint = a.type === "payment" ? "#6FA98A33" : "#7B9BC433";
-  const editable = a.type !== "created";
-  return `<li class="${editable ? "tappable" : ""}" ${editable ? `data-log-id="${a.id}"` : ""}>
+  const metaParts = [a.date];
+  if (a.note) metaParts.push(a.note);
+  return `<li class="tappable" data-log-id="${a.id}">
     <span class="row-left">
       <span class="row-icon" style="background:${tint}">${a.type === "payment" ? "💸" : "➕"}</span>
       <span>
         <div class="row-title">${label}</div>
-        <div class="row-meta">${a.date}${editable ? "" : " · locked"}</div>
+        <div class="row-meta">${metaParts.join(" · ")}</div>
       </span>
     </span>
     <span class="row-amt">${sign}${maskedMoney(a.amount)}</span>
@@ -151,14 +152,19 @@ function openLogEdit(logId) {
   const entry = currentLog.find((x) => x.id === logId);
   if (!entry) return;
   activeLogEntry = entry;
-  const labels = { payment: "Payment", increase: "Added to balance" };
+  const labels = { payment: "Payment", increase: "Added to balance", created: "Debt created" };
   document.getElementById("logEditTitle").textContent = labels[entry.type] || entry.type;
   document.getElementById("logEditAmount").value = entry.amount;
   document.getElementById("logEditDate").value = entry.date;
   document.getElementById("logEditNote").value = entry.note || "";
-  document.getElementById("logEditHint").textContent = entry.type === "payment"
-    ? "Editing or deleting this will also update the linked account balance and transaction."
-    : "This only affects the debt balance — no account is linked to this entry.";
+  if (entry.type === "payment") {
+    document.getElementById("logEditHint").textContent = "Editing or deleting this will also update the linked account balance and transaction.";
+  } else if (entry.type === "created") {
+    document.getElementById("logEditHint").textContent = "This was the starting amount for this debt. It can't be deleted while the debt exists, but you can correct the amount, date, or note.";
+  } else {
+    document.getElementById("logEditHint").textContent = "This only affects the debt balance — no account is linked to this entry.";
+  }
+  document.getElementById("logEditDelete").classList.toggle("hidden", entry.type === "created");
   document.getElementById("debtActionOverlay").classList.remove("open");
   document.getElementById("logEditOverlay").classList.add("open");
 }
@@ -177,7 +183,7 @@ document.getElementById("logEditSave").addEventListener("click", async () => {
   const d = debts.find((x) => x.id === entry.debt_id);
   const diff = newAmount - Number(entry.amount); // positive if amount increased
 
-  if (entry.type === "increase") {
+  if (entry.type === "increase" || entry.type === "created") {
     await supabase.from("debts").update({ balance: Number(d.balance) + diff }).eq("id", d.id);
   } else if (entry.type === "payment") {
     // A bigger payment reduces the debt further; a smaller one owes more back.
@@ -206,6 +212,7 @@ document.getElementById("logEditSave").addEventListener("click", async () => {
 document.getElementById("logEditDelete").addEventListener("click", async () => {
   const entry = activeLogEntry;
   if (!entry) return;
+  if (entry.type === "created") { return; } // guarded in UI too; belt and braces
   const ok = confirm("Delete this activity? The debt balance (and linked account, if any) will be adjusted back.");
   if (!ok) return;
 
@@ -309,9 +316,16 @@ document.getElementById("confirmAddDebt").addEventListener("click", async () => 
     .select()
     .single();
 
-  if (!error && data) {
-    await supabase.from("debt_activity").insert({ debt_id: data.id, date: todayISO(), amount, type: "created" });
+  if (error) {
+    console.error(error);
+    alert(`Couldn't add this debt: ${error.message}`);
+    return;
   }
+
+  const { error: logError } = await supabase
+    .from("debt_activity")
+    .insert({ debt_id: data.id, date: todayISO(), amount, type: "created" });
+  if (logError) console.error(logError);
 
   document.getElementById("addDebtOverlay").classList.remove("open");
   document.getElementById("debtDeadline").value = "";
