@@ -15,12 +15,10 @@
     <h1 class="page-heading">Debts</h1>
 
     <div class="debt-net">
-      <div class="hero-label-row" style="justify-content:center;">
-        <span class="debt-net-number" id="netNumber">RM —</span>
-        <button class="eye-btn" id="toggleDebtVisibility" title="Show/hide">
-          <svg id="debtEyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>
-          </svg>
+      <div class="hero-amount-row">
+        <p class="debt-net-number" id="netNumber">RM —</p>
+        <button class="eye-btn" id="toggleDebtVisibility" title="Show/hide amounts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
       </div>
       <p class="debt-net-label" id="netLabel">Net position</p>
@@ -31,6 +29,16 @@
 
     <h2 class="section-title">You owe</h2>
     <ul class="grouped-list" id="oweList"></ul>
+
+    <button class="collapse-toggle" id="toggleCleared">
+      <span id="clearedToggleLabel">Cleared debts</span>
+      <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="collapse-content" id="clearedCollapse">
+      <div>
+        <ul class="grouped-list" id="clearedList" style="margin-top:10px;"></ul>
+      </div>
+    </div>
   </main>
 
   <button class="fab" id="openAddDebt" title="Add debt">+</button>
@@ -56,6 +64,13 @@
         <div class="amount-row">
           <span class="amount-currency">RM</span>
           <input type="number" inputmode="decimal" class="amount-input" id="debtAmount" placeholder="0.00" />
+        </div>
+
+        <div class="hidden" id="nettingHint" style="background:var(--bg-elevated-2); border-radius:12px; padding:12px 14px; margin-bottom:4px;">
+          <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+            <input type="checkbox" id="nettingCheckbox" checked style="width:17px; height:17px; margin-top:2px; flex-shrink:0;" />
+            <span id="nettingText" style="font-size:13px; color:var(--label-secondary); line-height:1.4;"></span>
+          </label>
         </div>
 
         <label class="field-label">Note (optional)</label>
@@ -84,7 +99,7 @@
         <button class="btn-secondary" id="openIncreaseDebt" style="color:var(--blue); background:var(--bg-elevated-2);">Add more to this debt</button>
         <button class="btn-secondary" id="deleteDebt">Delete this debt</button>
 
-        <h2 class="section-title" style="margin-top:24px;">Activity</h2>
+        <h2 class="section-title" style="margin-top:22px;">Activity</h2>
         <ul class="grouped-list" id="debtLog"></ul>
       </div>
     </div>
