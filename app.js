@@ -366,7 +366,8 @@ function openDetail(id) {
   document.getElementById("detailEditNoteWrap").classList.add("hidden");
   document.getElementById("detailSaveEdit").classList.add("hidden");
   document.getElementById("detailEditToggle").classList.remove("hidden");
-  document.getElementById("detailDelete").classList.remove("hidden");
+  document.getElementById("detailDelete").classList.add("hidden"); // only shown once in Edit mode — see detailEditToggle
+  document.getElementById("detailDelete").disabled = false;
   document.getElementById("detailManageCardLink").classList.add("hidden");
   document.getElementById("detailEditAmount").value = t.amount;
   document.getElementById("detailEditDate").value = t.date;
@@ -385,6 +386,7 @@ document.getElementById("detailEditToggle").addEventListener("click", () => {
   document.getElementById("detailEditNoteWrap").classList.remove("hidden");
   document.getElementById("detailSaveEdit").classList.remove("hidden");
   document.getElementById("detailEditToggle").classList.add("hidden");
+  document.getElementById("detailDelete").classList.remove("hidden");
 });
 
 document.getElementById("detailSaveEdit").addEventListener("click", async () => {
@@ -405,15 +407,22 @@ document.getElementById("detailSaveEdit").addEventListener("click", async () => 
 });
 
 document.getElementById("detailDelete").addEventListener("click", async () => {
+  const deleteBtn = document.getElementById("detailDelete");
+  if (deleteBtn.disabled) return; // already processing — ignore a second tap
   const ok = confirm("Delete this transaction? This will also reverse its effect on the account balance.");
   if (!ok) return;
 
+  deleteBtn.disabled = true; // lock immediately so a fast second tap can't double-reverse the balance
+
   const t = recentCache.find((x) => x.id === activeDetailId);
+  if (!t) { deleteBtn.disabled = false; return; }
+
   const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
   const revert = t.type === "expense" ? Number(t.amount) : -Number(t.amount);
   await supabase.from("accounts").update({ balance: Number(account.balance) + revert }).eq("id", t.account_id);
   await supabase.from("transactions").delete().eq("id", activeDetailId);
 
+  activeDetailId = null;
   document.getElementById("detailOverlay").classList.remove("open");
   await loadDashboard();
 });
