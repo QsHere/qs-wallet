@@ -326,6 +326,7 @@ function openCardDetail(c) {
   document.getElementById("detailEditToggle").classList.add("hidden");
   document.getElementById("detailDelete").classList.add("hidden");
   document.getElementById("detailManageCardLink").classList.remove("hidden");
+  hideDetailEditExtras();
 
   document.getElementById("detailOverlay").classList.add("open");
 }
@@ -368,6 +369,8 @@ function openDetail(id) {
   document.getElementById("detailEditToggle").classList.remove("hidden");
   document.getElementById("detailDelete").classList.add("hidden"); // only shown once in Edit mode — see detailEditToggle
   document.getElementById("detailDelete").disabled = false;
+  document.getElementById("detailSaveEdit").disabled = false;
+  hideDetailEditExtras();
   document.getElementById("detailManageCardLink").classList.add("hidden");
   document.getElementById("detailEditAmount").value = t.amount;
   document.getElementById("detailEditDate").value = t.date;
@@ -380,27 +383,138 @@ document.getElementById("detailClose").addEventListener("click", () => {
   document.getElementById("detailOverlay").classList.remove("open");
 });
 
-document.getElementById("detailEditToggle").addEventListener("click", () => {
+// ---------- Edit mode: type / category / source ----------
+let detailEditState = { type: "expense", categoryId: null, locked: true };
+
+function categoryPathLabel(c) {
+  const parts = [c.name];
+  let cur = c;
+  let guard = 0;
+  while (cur && cur.parent_id && guard++ < 8) {
+    cur = categoriesCache.find((x) => x.id === cur.parent_id);
+    if (cur) parts.unshift(cur.name);
+  }
+  return parts.join(" › ");
+}
+
+function hideDetailEditExtras() {
+  ["detailEditTypeWrap", "detailTypeLockedHint", "detailEditCategoryWrap", "detailEditSourceWrap"]
+    .forEach((id) => document.getElementById(id).classList.add("hidden"));
+}
+
+function renderDetailEditFields() {
+  const s = detailEditState;
+  document.getElementById("detailEditTypeWrap").classList.toggle("hidden", s.locked);
+  document.getElementById("detailTypeLockedHint").classList.toggle("hidden", !s.locked);
+  document.getElementById("detailTypeExpense").classList.toggle("selected", s.type === "expense");
+  document.getElementById("detailTypeIncome").classList.toggle("selected", s.type === "income");
+  document.getElementById("detailEditCategoryWrap").classList.toggle("hidden", s.locked || s.type !== "expense");
+  document.getElementById("detailEditSourceWrap").classList.toggle("hidden", s.locked || s.type !== "income");
+
+  document.getElementById("detailEditCategoryPills").innerHTML = categoriesCache
+    .filter((c) => !c.is_system)
+    .map((c) => ({ c, label: categoryPathLabel(c) }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .map(({ c, label }) => `<button type="button" class="pill ${c.id === s.categoryId ? "selected" : ""}" data-cat-id="${c.id}">${c.icon || "🏷️"} ${label}</button>`)
+    .join("");
+}
+
+// Debt repayments, debt-created entries and card top-ups are tied to other records,
+// so flipping their type here would leave those records out of sync.
+async function isLinkedTransaction(id) {
+  const [d, c] = await Promise.all([
+    supabase.from("debt_activity").select("id").eq("transaction_id", id).limit(1),
+    supabase.from("card_activity").select("id").eq("transaction_id", id).limit(1),
+  ]);
+  if (d.error || c.error) return true; // can't verify — stay on the safe side
+  return (d.data || []).length > 0 || (c.data || []).length > 0;
+}
+
+document.getElementById("detailEditToggle").addEventListener("click", async () => {
+  const t = recentCache.find((x) => x.id === activeDetailId);
+  if (!t) return;
+
   document.getElementById("detailEditRow").classList.remove("hidden");
   document.getElementById("detailEditDateWrap").classList.remove("hidden");
   document.getElementById("detailEditNoteWrap").classList.remove("hidden");
   document.getElementById("detailSaveEdit").classList.remove("hidden");
   document.getElementById("detailEditToggle").classList.add("hidden");
   document.getElementById("detailDelete").classList.remove("hidden");
+
+  // Start locked until we've confirmed nothing else depends on this transaction
+  detailEditState = { type: t.type, categoryId: t.type === "expense" ? t.category_id : null, locked: true };
+  document.getElementById("detailEditSource").value = t.source || "";
+  renderDetailEditFields();
+
+  const linked = await isLinkedTransaction(t.id);
+  if (activeDetailId !== t.id) return; // sheet was closed/changed meanwhile
+  detailEditState.locked = linked;
+  renderDetailEditFields();
+});
+
+document.getElementById("detailEditTypeWrap").addEventListener("click", (e) => {
+  const pill = e.target.closest("[data-edit-type]");
+  if (!pill || detailEditState.locked) return;
+  detailEditState.type = pill.dataset.editType;
+  renderDetailEditFields();
+});
+
+document.getElementById("detailEditCategoryPills").addEventListener("click", (e) => {
+  const pill = e.target.closest("[data-cat-id]");
+  if (!pill || detailEditState.locked) return;
+  detailEditState.categoryId = pill.dataset.catId;
+  renderDetailEditFields();
 });
 
 document.getElementById("detailSaveEdit").addEventListener("click", async () => {
+  const saveBtn = document.getElementById("detailSaveEdit");
+  if (saveBtn.disabled) return;
   const t = recentCache.find((x) => x.id === activeDetailId);
+  if (!t) return;
   const newAmount = parseFloat(document.getElementById("detailEditAmount").value);
   const newDate = document.getElementById("detailEditDate").value;
   const newNote = document.getElementById("detailEditNote").value.trim() || null;
   if (!newAmount || newAmount <= 0 || !newDate) return;
 
-  const diff = newAmount - Number(t.amount);
-  const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
-  const balanceDelta = t.type === "expense" ? -diff : diff;
-  await supabase.from("accounts").update({ balance: Number(account.balance) + balanceDelta }).eq("id", t.account_id);
-  await supabase.from("transactions").update({ amount: newAmount, date: newDate, note: newNote }).eq("id", activeDetailId);
+  const s = detailEditState;
+  const newType = s.locked ? t.type : s.type;
+  if (!s.locked && newType === "expense" && t.type === "income" && !s.categoryId) {
+    alert("Pick a category for this expense.");
+    return;
+  }
+
+  saveBtn.disabled = true;
+
+  const payload = { amount: newAmount, date: newDate, note: newNote };
+  if (!s.locked) {
+    payload.type = newType;
+    if (newType === "expense") {
+      payload.category_id = s.categoryId;
+      if (t.type === "income") payload.source = null;
+    } else {
+      payload.source = document.getElementById("detailEditSource").value.trim() || null;
+      if (t.type === "expense") payload.category_id = null;
+    }
+  }
+
+  const { error } = await supabase.from("transactions").update(payload).eq("id", t.id);
+  if (error) {
+    console.error(error);
+    alert(`Couldn't save changes: ${error.message}`);
+    saveBtn.disabled = false;
+    return;
+  }
+
+  // Balance effect: income adds, expense subtracts. Switching type undoes the old effect and applies the new one.
+  const effect = (type, amt) => (type === "income" ? Number(amt) : -Number(amt));
+  const balanceDelta = effect(newType, newAmount) - effect(t.type, t.amount);
+  if (t.account_id && Math.abs(balanceDelta) > 0.0001) {
+    const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
+    if (account) {
+      const newBalance = Math.round((Number(account.balance) + balanceDelta) * 100) / 100;
+      await supabase.from("accounts").update({ balance: newBalance }).eq("id", t.account_id);
+    }
+  }
 
   document.getElementById("detailOverlay").classList.remove("open");
   await loadDashboard();
@@ -417,9 +531,13 @@ document.getElementById("detailDelete").addEventListener("click", async () => {
   const t = recentCache.find((x) => x.id === activeDetailId);
   if (!t) { deleteBtn.disabled = false; return; }
 
-  const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
-  const revert = t.type === "expense" ? Number(t.amount) : -Number(t.amount);
-  await supabase.from("accounts").update({ balance: Number(account.balance) + revert }).eq("id", t.account_id);
+  if (t.account_id) {
+    const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
+    if (account) {
+      const revert = t.type === "expense" ? Number(t.amount) : -Number(t.amount);
+      await supabase.from("accounts").update({ balance: Number(account.balance) + revert }).eq("id", t.account_id);
+    }
+  }
   await supabase.from("transactions").delete().eq("id", activeDetailId);
 
   activeDetailId = null;

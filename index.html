@@ -211,6 +211,22 @@
           <span class="amount-currency">RM</span>
           <input type="number" inputmode="decimal" class="amount-input" id="detailEditAmount" />
         </div>
+        <div class="hidden" id="detailEditTypeWrap">
+          <label class="field-label">Type</label>
+          <div class="pill-row">
+            <button type="button" class="pill selected" id="detailTypeExpense" data-edit-type="expense" style="flex:1; justify-content:center;">Expense</button>
+            <button type="button" class="pill" id="detailTypeIncome" data-edit-type="income" style="flex:1; justify-content:center;">Income</button>
+          </div>
+        </div>
+        <p class="hero-caption hidden" id="detailTypeLockedHint" style="text-align:left; margin:12px 4px 0;">This transaction is linked to a debt or card, so its type and category can't be changed here.</p>
+        <div class="hidden" id="detailEditCategoryWrap">
+          <label class="field-label">Category</label>
+          <div class="pill-row" id="detailEditCategoryPills" style="max-height:150px; overflow-y:auto;"></div>
+        </div>
+        <div class="hidden" id="detailEditSourceWrap">
+          <label class="field-label">Source (optional)</label>
+          <input type="text" class="text-input" id="detailEditSource" placeholder="e.g. Salary, Father's business" />
+        </div>
         <div class="hidden" id="detailEditDateWrap">
           <label class="field-label">Date</label>
           <input type="date" class="date-input" id="detailEditDate" />
