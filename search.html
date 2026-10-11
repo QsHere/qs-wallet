@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#F7F4EF" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="stylesheet" href="style.css" />
+<title>QS Wallet · Search</title>
+<style>
+  .search-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--bg);
+    margin: 0 -20px 6px;
+    padding: 8px 20px 6px;
+  }
+  .search-bar { position: relative; margin-bottom: 10px; }
+  .search-bar .text-input { padding-left: 42px; padding-right: 44px; font-size: 16px; }
+  .search-bar .search-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    width: 18px; height: 18px; color: var(--label-tertiary); pointer-events: none;
+  }
+  .search-bar .clear-btn {
+    display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 28px; border: none; border-radius: 50%;
+    background: var(--bg-elevated-3); color: var(--label-secondary);
+    font-size: 13px; cursor: pointer; align-items: center; justify-content: center;
+  }
+  .search-bar.has-text .clear-btn { display: flex; }
+
+  .filter-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 8px; padding-bottom: 2px; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .filter-row .pill { flex-shrink: 0; padding: 8px 14px; font-size: 13px; }
+  .custom-range { display: flex; gap: 8px; margin-bottom: 8px; }
+  .custom-range .date-input { padding: 10px 12px; font-size: 14px; }
+
+  .search-summary { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--label-secondary); margin: 14px 4px 12px; }
+  .search-summary b { color: var(--label); font-weight: 600; }
+
+  mark { background: rgba(217, 168, 104, 0.4); color: inherit; border-radius: 3px; padding: 0 1px; }
+  .row-title, .row-meta { overflow-wrap: anywhere; }
+
+  .idle-tip { text-align: left; margin: 18px 4px 0; line-height: 1.5; }
+  .link-btn { background: none; border: none; color: var(--blue); font-size: 13px; cursor: pointer; padding: 2px 4px; }
+</style>
+</head>
+<body>
+
+  <main class="settings-page">
+    <a href="index.html" class="nav-back-inline" id="backLink">‹ Back</a>
+    <h1 class="page-heading">Search</h1>
+
+    <div class="search-sticky">
+      <div class="search-bar" id="searchBar">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" class="text-input" placeholder="Search notes, sources, categories, amounts…" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="search" />
+        <button type="button" class="clear-btn" id="clearSearch" aria-label="Clear search">✕</button>
+      </div>
+
+      <div class="filter-row" id="typeFilters">
+        <button type="button" class="pill selected" data-type="all">All</button>
+        <button type="button" class="pill" data-type="expense">Expenses</button>
+        <button type="button" class="pill" data-type="income">Income</button>
+        <button type="button" class="pill" data-type="card">Card spends</button>
+      </div>
+      <div class="filter-row" id="dateFilters">
+        <button type="button" class="pill selected" data-range="all">All time</button>
+        <button type="button" class="pill" data-range="month">This month</button>
+        <button type="button" class="pill" data-range="custom">Custom…</button>
+        <button type="button" class="pill" id="sortBtn">Newest first</button>
+      </div>
+      <div class="custom-range hidden" id="customRangeWrap">
+        <input type="date" class="date-input" id="rangeStart" />
+        <input type="date" class="date-input" id="rangeEnd" />
+      </div>
+    </div>
+
+    <p class="empty-note hidden" id="loadingNote">Loading your history…</p>
+
+    <div id="idleState" class="hidden">
+      <div id="recentSearchesWrap" class="hidden">
+        <h2 class="section-title"><span>Recent searches</span> <button type="button" class="link-btn" id="clearRecents">Clear</button></h2>
+        <div class="pill-row" id="recentSearches"></div>
+      </div>
+      <p class="hero-caption idle-tip" id="idleTip"></p>
+    </div>
+
+    <div id="resultsArea" class="hidden">
+      <div class="search-summary" id="searchSummary"></div>
+      <div id="resultsList"></div>
+      <button type="button" class="btn-secondary hidden" id="showMore" style="color:var(--blue); background:var(--bg-elevated-2);">Show more</button>
+    </div>
+  </main>
+
+  <!-- TRANSACTION DETAIL SHEET -->
+  <div class="sheet-overlay" id="detailOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span>Transaction</span>
+        <button class="sheet-close" id="detailClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="detail-header">
+          <span class="tile-mini" id="detailIconWrap" style="width:40px;height:40px;border-radius:12px;font-size:20px;"><span id="detailIcon"></span></span>
+          <span class="detail-amount" id="detailAmount"></span>
+        </div>
+        <div class="detail-rows">
+          <div class="detail-row"><span class="k" id="detailCategoryLabel">Category</span><span class="v" id="detailCategory"></span></div>
+          <div class="detail-row"><span class="k" id="detailAccountLabel">Account</span><span class="v" id="detailAccount"></span></div>
+          <div class="detail-row"><span class="k">Date</span><span class="v" id="detailDate"></span></div>
+          <div class="detail-row"><span class="k">Time of day</span><span class="v" id="detailPeriod"></span></div>
+          <div class="detail-row hidden" id="detailNoteRow"><span class="k">Note</span><span class="v" id="detailNote"></span></div>
+        </div>
+
+        <div class="amount-row hidden" id="detailEditRow">
+          <span class="amount-currency">RM</span>
+          <input type="number" inputmode="decimal" class="amount-input" id="detailEditAmount" />
+        </div>
+        <div class="hidden" id="detailEditTypeWrap">
+          <label class="field-label">Type</label>
+          <div class="pill-row">
+            <button type="button" class="pill selected" id="detailTypeExpense" data-edit-type="expense" style="flex:1; justify-content:center;">Expense</button>
+            <button type="button" class="pill" id="detailTypeIncome" data-edit-type="income" style="flex:1; justify-content:center;">Income</button>
+          </div>
+        </div>
+        <p class="hero-caption hidden" id="detailTypeLockedHint" style="text-align:left; margin:12px 4px 0;">This transaction is linked to a debt or card, so its type and category can't be changed here.</p>
+        <div class="hidden" id="detailEditCategoryWrap">
+          <label class="field-label">Category</label>
+          <div class="pill-row" id="detailEditCategoryPills" style="max-height:150px; overflow-y:auto;"></div>
+        </div>
+        <div class="hidden" id="detailEditSourceWrap">
+          <label class="field-label">Source (optional)</label>
+          <input type="text" class="text-input" id="detailEditSource" placeholder="e.g. Salary, Father's business" />
+        </div>
+        <div class="hidden" id="detailEditDateWrap">
+          <label class="field-label">Date</label>
+          <input type="date" class="date-input" id="detailEditDate" />
+        </div>
+        <div class="hidden" id="detailEditNoteWrap">
+          <label class="field-label">Note</label>
+          <input type="text" class="text-input" id="detailEditNote" placeholder="Add a note" />
+        </div>
+
+        <button class="btn-confirm hidden" id="detailSaveEdit">Save changes</button>
+        <button class="btn-secondary" id="detailEditToggle" style="color:var(--blue); background:var(--bg-elevated-2);">Edit details</button>
+        <button class="btn-secondary hidden" id="detailDelete">Delete this transaction</button>
+        <a href="cards.html" class="btn-secondary hidden" id="detailManageCardLink" style="display:block; text-align:center; text-decoration:none; color:var(--blue); background:var(--bg-elevated-2); box-sizing:border-box;">Manage on Cards page</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="search.js"></script>
+</body>
+</html>

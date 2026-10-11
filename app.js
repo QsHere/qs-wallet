@@ -1,4 +1,4 @@
-import { supabase, money, todayISO, defaultPeriod, colorFor, animateNumber, attachSwipeToDismiss, enableTabSwipe } from "./db.js";
+import { supabase, money, todayISO, yesterdayISO, defaultPeriod, colorFor, animateNumber, attachSwipeToDismiss, enableTabSwipe } from "./db.js";
 
 let accountsCache = [];
 let categoriesCache = [];
@@ -8,12 +8,6 @@ let hideBalance = localStorage.getItem("qs-hide-balance") === "1";
 
 const spendState = { accountId: null, date: todayISO(), period: defaultPeriod() };
 const incomeState = { accountId: null, date: todayISO(), period: defaultPeriod() };
-
-function yesterdayISO() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
 
 function greetingFor() {
   const h = new Date().getHours();

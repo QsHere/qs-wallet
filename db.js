@@ -3,7 +3,34 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 export const money = (n) => `RM ${Number(n).toFixed(2)}`;
-export const todayISO = () => new Date().toISOString().slice(0, 10);
+
+// ---- date helpers ----
+// Dates are stored as plain "YYYY-MM-DD" strings, so they must be built from LOCAL time.
+// toISOString() converts to UTC first, which in Malaysia (UTC+8) moves the date back by a
+// day whenever the local time is before 08:00 (and shifts any midnight-based range too).
+export function localISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// "Today" rolls over at 5am rather than midnight, so anything logged after midnight still
+// counts as the same day (matches the "Midnight" time-of-day option, which covers 12am–5am).
+// Set this to 0 if you'd rather "Today" always follow the calendar date.
+const DAY_ROLLOVER_HOUR = 5;
+
+function businessNow() {
+  const d = new Date();
+  if (d.getHours() < DAY_ROLLOVER_HOUR) d.setDate(d.getDate() - 1);
+  return d;
+}
+
+export const todayISO = () => localISO(businessNow());
+
+export function yesterdayISO() {
+  const d = businessNow();
+  d.setDate(d.getDate() - 1);
+  return localISO(d);
+}
+// ---- end date helpers ----
 
 // Rough default for the time-of-day picker, based on the clock right now.
 // Purely a suggestion — the person can always override it.

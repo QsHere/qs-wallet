@@ -1,4 +1,4 @@
-import { supabase, money, colorFor } from "./db.js";
+import { supabase, money, colorFor, localISO } from "./db.js";
 
 let categories = [];
 let expenses = [];
@@ -9,7 +9,7 @@ let chart;
 // The date QS Wallet's data starts from — used as the default "show everything" range.
 const APP_START_DATE = "2026-09-06";
 
-function iso(d) { return d.toISOString().slice(0, 10); }
+const iso = localISO; // local-time date string (toISOString would shift by the UTC offset)
 
 function computeRange(key) {
   const now = new Date();
