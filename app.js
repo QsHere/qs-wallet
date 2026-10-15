@@ -1,4 +1,4 @@
-import { supabase, money, todayISO, yesterdayISO, defaultPeriod, colorFor, animateNumber, attachSwipeToDismiss, enableTabSwipe } from "./db.js";
+import { supabase, money, todayISO, yesterdayISO, defaultPeriod, colorFor, animateNumber, attachSwipeToDismiss, enableTabSwipe, accountIconHTML } from "./db.js";
 
 let accountsCache = [];
 let categoriesCache = [];
@@ -48,14 +48,6 @@ async function loadDebtsSummary() {
   oweEl.innerHTML = `<span>You owe</span><span class="debts-chip-amt">${money(youOwe)}</span>`;
 }
 
-function iconForAccount(name) {
-  const n = name.toLowerCase();
-  if (n.includes("cash")) return "💵";
-  if (n.includes("tng") || n.includes("wallet")) return "📱";
-  if (n.includes("bank")) return "🏦";
-  return "💳";
-}
-
 async function loadBalances() {
   const { data, error } = await supabase.from("accounts").select("*").order("name");
   if (error) { console.error(error); return; }
@@ -63,9 +55,11 @@ async function loadBalances() {
 
   document.getElementById("balances").innerHTML = data
     .map((a) => `<div class="wallet-chip">
-        <span class="wallet-chip-icon">${iconForAccount(a.name)}</span>
-        <span class="wallet-chip-name">${a.name}</span>
-        <span class="wallet-chip-amt">${money(a.balance)}</span>
+        ${accountIconHTML(a)}
+        <span class="wallet-chip-text">
+          <span class="wallet-chip-name">${a.name}</span>
+          <span class="wallet-chip-amt">${money(a.balance)}</span>
+        </span>
       </div>`)
     .join("");
 

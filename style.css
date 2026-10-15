@@ -340,10 +340,12 @@ a { -webkit-tap-highlight-color: transparent; }
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
   background: var(--bg-elevated);
-  border-radius: 14px;
-  padding: 12px 14px;
+  border-radius: 12px;
+  padding: 10px 12px;
   text-decoration: none;
   box-shadow: 0 1px 4px rgba(60, 50, 40, 0.07);
   font-size: 11px;
@@ -354,7 +356,7 @@ a { -webkit-tap-highlight-color: transparent; }
 }
 
 .debts-chip .debts-chip-amt {
-  font-size: 16px;
+  font-size: 15px;
   font-variant-numeric: tabular-nums;
   text-transform: none;
   letter-spacing: 0;
@@ -1351,50 +1353,61 @@ a { -webkit-tap-highlight-color: transparent; }
 }
 .toggle-row .collapse-toggle { flex: 1; }
 
-/* ---------- Wallet chips (Home: Accounts & Debts redesign) ---------- */
+/* ---------- Wallet chips (Home: Accounts & Debts) ---------- */
 .wallet-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 10px;
 }
 
+/* An odd last card stretches across the row, so there are never empty gaps */
+.wallet-chip:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
 .wallet-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   background: var(--bg-elevated);
   border-radius: 14px;
-  padding: 12px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  padding: 10px 12px;
   box-shadow: 0 1px 4px rgba(60, 50, 40, 0.07);
 }
 
-.wallet-chip-icon { font-size: 17px; }
+.wallet-chip-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .wallet-chip-name {
-  font-size: 10.5px;
-  color: var(--label-secondary);
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  color: var(--label-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .wallet-chip-amt {
   font-size: 15px;
   font-weight: 700;
   color: var(--label);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.debts-chip {
-  display: flex;
-  justify-content: space-between;
+
+/* ---------- Account icons: emoji tile or uploaded picture, same size ---------- */
+.acct-icon {
+  display: inline-flex;
   align-items: center;
-  background: var(--bg-elevated);
-  border-radius: 14px;
-  padding: 13px 14px;
-  text-decoration: none;
-  box-shadow: 0 1px 4px rgba(60, 50, 40, 0.07);
-  font-size: 13px;
-  color: var(--label-secondary);
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  font-size: 17px;
+  overflow: hidden;
+  flex-shrink: 0;
 }
-.debts-chip b.owed-to-you { color: var(--green); font-weight: 700; }
-.debts-chip b.you-owe { color: var(--red); font-weight: 700; }
+.acct-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.row-left .acct-icon { margin-right: 12px; }
+
+.acct-form-icon { display: flex; align-items: center; gap: 16px; margin-bottom: 4px; }
+.acct-preview .acct-icon { width: 64px; height: 64px; border-radius: 18px; font-size: 30px; }
+.acct-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }

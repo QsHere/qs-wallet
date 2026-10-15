@@ -51,6 +51,54 @@ export function colorFor(text) {
   return PALETTE[Math.abs(hash) % PALETTE.length];
 }
 
+// ---------- Account icons ----------
+// Default emoji when an account has no uploaded picture.
+export function iconForAccount(name) {
+  const n = String(name || "").toLowerCase();
+  if (n.includes("cash")) return "💵";
+  if (n.includes("tng") || n.includes("wallet")) return "📱";
+  if (n.includes("bank") || n.includes("pbe")) return "🏦";
+  return "💳";
+}
+
+// One 34px tile for an account: its uploaded picture if it has one, otherwise a tinted emoji.
+// Pictures fill the same tile as the emoji, so lists keep exactly the same size.
+export function accountIconHTML(account) {
+  if (account && account.icon_url) {
+    const src = String(account.icon_url).replace(/"/g, "&quot;");
+    return `<span class="acct-icon"><img src="${src}" alt="" /></span>`;
+  }
+  const name = account ? account.name : "";
+  return `<span class="acct-icon" style="background:${colorFor(name)}33">${iconForAccount(name)}</span>`;
+}
+
+// Turns a chosen image file into a small square (centre-cropped) data URL, ready to store
+// directly in the database — no separate file storage needed. 128px is plenty for a 34px tile.
+export function fileToIconDataURL(file, size = 128) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const side = Math.min(img.naturalWidth, img.naturalHeight);
+      const sx = (img.naturalWidth - side) / 2;
+      const sy = (img.naturalHeight - side) / 2;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      canvas.getContext("2d").drawImage(img, sx, sy, side, side, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      let out = canvas.toDataURL("image/webp", 0.9); // keeps transparency, small
+      if (!out.startsWith("data:image/webp")) out = canvas.toDataURL("image/png"); // browsers without webp encoding
+      resolve(out);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("That file couldn't be read as an image."));
+    };
+    img.src = url;
+  });
+}
+
 // Animates a number counting up/down inside an element — used for the hero figure.
 export function animateNumber(el, to, { prefix = "RM ", duration = 500 } = {}) {
   const from = parseFloat((el.dataset.value || "0"));

@@ -17,34 +17,44 @@
 
     <ul class="grouped-list" id="accountsList"></ul>
 
-    <div class="add-row">
-      <input type="text" id="newAccountName" placeholder="New account name" class="text-input" />
-      <div class="amount-row" style="flex:none; width:110px; margin:0; padding:0; border:none;">
-        <span class="amount-currency" style="font-size:15px;">RM</span>
-        <input type="number" inputmode="decimal" id="newAccountBalance" placeholder="0.00" class="text-input" style="padding:8px 4px;" />
-      </div>
-      <button class="small-btn btn-confirm" id="addAccount">Add</button>
-    </div>
-
-    <button class="btn-confirm" id="openTransfer" style="margin-top:6px;">⇄ Transfer between accounts</button>
+    <button class="btn-secondary" id="openAddAccount" style="color:var(--blue); background:var(--bg-elevated-2); margin-top:0; margin-bottom:12px;">+ New account</button>
+    <button class="btn-confirm" id="openTransfer" style="margin-top:0;">⇄ Transfer between accounts</button>
 
     <h2 class="section-title" style="margin-top:28px;">Transfer history</h2>
     <ul class="grouped-list" id="transferLog"></ul>
   </main>
 
-  <!-- EDIT ACCOUNT NAME SHEET -->
-  <div class="sheet-overlay" id="editAccountOverlay">
+  <!-- ADD / EDIT ACCOUNT SHEET -->
+  <div class="sheet-overlay" id="accountFormOverlay">
     <div class="sheet">
       <div class="sheet-handle"></div>
       <div class="sheet-header">
         <span></span>
-        <span>Rename account</span>
-        <button class="sheet-close" id="editAccountClose">Close</button>
+        <span id="accountFormTitle">New account</span>
+        <button class="sheet-close" id="accountFormClose">Close</button>
       </div>
       <div class="sheet-body">
+        <div class="acct-form-icon">
+          <div class="acct-preview" id="accountFormPreview"></div>
+          <div class="acct-form-actions">
+            <button type="button" class="pill" id="accountIconPick">📷 Upload picture</button>
+            <button type="button" class="pill hidden" id="accountIconRemove">Remove</button>
+          </div>
+          <input type="file" id="accountIconFile" accept="image/*" class="hidden" />
+        </div>
+
         <label class="field-label">Name</label>
-        <input type="text" id="editAccountName" class="text-input" />
-        <button class="btn-confirm" id="saveAccountName">Save</button>
+        <input type="text" id="accountFormName" class="text-input" placeholder="e.g. Public Bank, TNG Wallet" />
+
+        <div id="accountFormBalanceWrap">
+          <label class="field-label">Starting balance</label>
+          <div class="amount-row">
+            <span class="amount-currency">RM</span>
+            <input type="number" inputmode="decimal" class="amount-input" id="accountFormBalance" placeholder="0.00" />
+          </div>
+        </div>
+
+        <button class="btn-confirm" id="saveAccountForm">Save</button>
       </div>
     </div>
   </div>

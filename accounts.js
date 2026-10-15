@@ -1,16 +1,12 @@
-import { supabase, money, todayISO, colorFor, attachSwipeToDismiss } from "./db.js";
+import { supabase, money, todayISO, yesterdayISO, attachSwipeToDismiss, accountIconHTML, fileToIconDataURL } from "./db.js";
+
+const $ = (id) => document.getElementById(id);
 
 let accounts = [];
 let editingAccountId = null;
 let transferState = { fromId: null, toId: null, date: todayISO() };
 let currentTransfers = [];
 let activeTransferEntry = null;
-
-function yesterdayISO() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
 
 async function loadAll() {
   await loadAccounts();
@@ -22,10 +18,10 @@ async function loadAccounts() {
   if (error) { console.error(error); return; }
   accounts = data || [];
 
-  document.getElementById("accountsList").innerHTML = accounts.length
+  $("accountsList").innerHTML = accounts.length
     ? accounts.map((a) => `<li class="tappable" data-id="${a.id}">
         <span class="row-left">
-          <span class="row-icon" style="background:${colorFor(a.name)}33">🏦</span>
+          ${accountIconHTML(a)}
           <span class="row-title">${a.name}</span>
         </span>
         <span class="row-amt">${money(a.balance)}</span>
@@ -35,34 +31,93 @@ async function loadAccounts() {
   buildTransferPills();
 }
 
-document.getElementById("accountsList").addEventListener("click", (e) => {
+// ---------- Add / edit account (with an optional picture) ----------
+let formMode = "add";
+let formIcon = null;        // data URL of the chosen picture, or null for the default emoji
+let formIconDirty = false;  // true once the picture was changed or removed while editing
+
+function renderFormPreview() {
+  const name = $("accountFormName").value.trim() || "Account";
+  $("accountFormPreview").innerHTML = accountIconHTML({ name, icon_url: formIcon });
+  $("accountIconRemove").classList.toggle("hidden", !formIcon);
+  $("accountIconPick").textContent = formIcon ? "📷 Change picture" : "📷 Upload picture";
+}
+
+function openAccountForm(mode, account) {
+  formMode = mode;
+  editingAccountId = account ? account.id : null;
+  formIcon = account?.icon_url || null;
+  formIconDirty = false;
+  $("accountFormTitle").textContent = mode === "add" ? "New account" : "Edit account";
+  $("accountFormName").value = account ? account.name : "";
+  $("accountFormBalance").value = "";
+  $("accountFormBalanceWrap").classList.toggle("hidden", mode !== "add");
+  $("accountIconFile").value = "";
+  $("saveAccountForm").disabled = false;
+  renderFormPreview();
+  $("accountFormOverlay").classList.add("open");
+}
+
+$("openAddAccount").addEventListener("click", () => openAccountForm("add"));
+
+$("accountsList").addEventListener("click", (e) => {
   const row = e.target.closest("[data-id]");
   if (!row) return;
   const a = accounts.find((x) => x.id === row.dataset.id);
-  editingAccountId = a.id;
-  document.getElementById("editAccountName").value = a.name;
-  document.getElementById("editAccountOverlay").classList.add("open");
+  if (a) openAccountForm("edit", a);
 });
 
-document.getElementById("editAccountClose").addEventListener("click", () => {
-  document.getElementById("editAccountOverlay").classList.remove("open");
+$("accountFormClose").addEventListener("click", () => $("accountFormOverlay").classList.remove("open"));
+$("accountFormName").addEventListener("input", renderFormPreview);
+
+$("accountIconPick").addEventListener("click", () => $("accountIconFile").click());
+
+$("accountIconFile").addEventListener("change", async () => {
+  const file = $("accountIconFile").files[0];
+  if (!file) return;
+  try {
+    formIcon = await fileToIconDataURL(file);
+    formIconDirty = true;
+    renderFormPreview();
+  } catch (err) {
+    alert(err.message || "Couldn't use that picture.");
+  }
+  $("accountIconFile").value = "";
 });
 
-document.getElementById("saveAccountName").addEventListener("click", async () => {
-  const name = document.getElementById("editAccountName").value.trim();
+$("accountIconRemove").addEventListener("click", () => {
+  formIcon = null;
+  formIconDirty = true;
+  renderFormPreview();
+});
+
+$("saveAccountForm").addEventListener("click", async () => {
+  const saveBtn = $("saveAccountForm");
+  if (saveBtn.disabled) return;
+  const name = $("accountFormName").value.trim();
   if (!name) return;
-  await supabase.from("accounts").update({ name }).eq("id", editingAccountId);
-  document.getElementById("editAccountOverlay").classList.remove("open");
-  await loadAccounts();
-});
+  saveBtn.disabled = true;
 
-document.getElementById("addAccount").addEventListener("click", async () => {
-  const name = document.getElementById("newAccountName").value.trim();
-  const balance = parseFloat(document.getElementById("newAccountBalance").value) || 0;
-  if (!name) return;
-  await supabase.from("accounts").insert({ name, balance });
-  document.getElementById("newAccountName").value = "";
-  document.getElementById("newAccountBalance").value = "";
+  let error;
+  if (formMode === "add") {
+    const balance = parseFloat($("accountFormBalance").value) || 0;
+    const row = { name, balance };
+    if (formIcon) row.icon_url = formIcon; // only sent when there is a picture
+    ({ error } = await supabase.from("accounts").insert(row));
+  } else {
+    const patch = { name };
+    if (formIconDirty) patch.icon_url = formIcon; // null clears the picture
+    ({ error } = await supabase.from("accounts").update(patch).eq("id", editingAccountId));
+  }
+
+  if (error) {
+    console.error(error);
+    alert(`Couldn't save this account: ${error.message}`);
+    saveBtn.disabled = false;
+    return;
+  }
+
+  $("accountFormOverlay").classList.remove("open");
   await loadAccounts();
 });
 
@@ -73,7 +128,7 @@ function buildTransferPills() {
 }
 
 function renderPillGroup(containerId, selectedId, onSelect) {
-  const container = document.getElementById(containerId);
+  const container = $(containerId);
   container.innerHTML = accounts
     .map((a) => `<button type="button" class="pill ${a.id === selectedId ? "selected" : ""}" data-account="${a.id}">${a.name}</button>`)
     .join("");
@@ -87,21 +142,21 @@ function renderPillGroup(containerId, selectedId, onSelect) {
   onSelect(selectedId);
 }
 
-document.getElementById("openTransfer").addEventListener("click", () => {
-  document.getElementById("transferAmount").value = "";
-  document.getElementById("transferNote").value = "";
+$("openTransfer").addEventListener("click", () => {
+  $("transferAmount").value = "";
+  $("transferNote").value = "";
   buildTransferPills();
   resetTransferDatePills();
-  document.getElementById("transferOverlay").classList.add("open");
+  $("transferOverlay").classList.add("open");
 });
 
-document.getElementById("transferClose").addEventListener("click", () => {
-  document.getElementById("transferOverlay").classList.remove("open");
+$("transferClose").addEventListener("click", () => {
+  $("transferOverlay").classList.remove("open");
 });
 
 function resetTransferDatePills() {
   const pills = document.querySelectorAll("#transferDatePills .pill");
-  const wrap = document.getElementById("transferDateWrap");
+  const wrap = $("transferDateWrap");
   pills.forEach((p) => p.classList.remove("selected"));
   pills[0].classList.add("selected");
   wrap.classList.add("hidden");
@@ -113,8 +168,8 @@ function wireTransferDatePillsOnce() {
   if (transferDatePillsWired) return;
   transferDatePillsWired = true;
   const pills = document.querySelectorAll("#transferDatePills .pill");
-  const wrap = document.getElementById("transferDateWrap");
-  const input = document.getElementById("transferDate");
+  const wrap = $("transferDateWrap");
+  const input = $("transferDate");
   pills.forEach((pill) => {
     pill.addEventListener("click", () => {
       pills.forEach((p) => p.classList.remove("selected"));
@@ -128,9 +183,9 @@ function wireTransferDatePillsOnce() {
 }
 wireTransferDatePillsOnce();
 
-document.getElementById("confirmTransfer").addEventListener("click", async () => {
-  const amount = parseFloat(document.getElementById("transferAmount").value);
-  const note = document.getElementById("transferNote").value.trim() || null;
+$("confirmTransfer").addEventListener("click", async () => {
+  const amount = parseFloat($("transferAmount").value);
+  const note = $("transferNote").value.trim() || null;
   const fromId = transferState.fromId;
   const toId = transferState.toId;
   if (!amount || amount <= 0) return;
@@ -148,13 +203,13 @@ document.getElementById("confirmTransfer").addEventListener("click", async () =>
     date: transferState.date, amount, from_account_id: fromId, to_account_id: toId, note,
   });
 
-  document.getElementById("transferOverlay").classList.remove("open");
+  $("transferOverlay").classList.remove("open");
   await loadAll();
 });
 
 // ---------- Transfer history log ----------
 async function loadTransferLog() {
-  const logEl = document.getElementById("transferLog");
+  const logEl = $("transferLog");
   const { data, error } = await supabase
     .from("transfers")
     .select("*")
@@ -186,7 +241,7 @@ function transferRowHTML(t) {
   </li>`;
 }
 
-document.getElementById("transferLog").addEventListener("click", (e) => {
+$("transferLog").addEventListener("click", (e) => {
   const row = e.target.closest("[data-id]");
   if (!row) return;
   openTransferEdit(row.dataset.id);
@@ -196,21 +251,21 @@ function openTransferEdit(id) {
   const t = currentTransfers.find((x) => x.id === id);
   if (!t) return;
   activeTransferEntry = t;
-  document.getElementById("transferEditTitle").textContent = `${accountName(t.from_account_id)} → ${accountName(t.to_account_id)}`;
-  document.getElementById("transferEditAmount").value = t.amount;
-  document.getElementById("transferEditDate").value = t.date;
-  document.getElementById("transferEditOverlay").classList.add("open");
+  $("transferEditTitle").textContent = `${accountName(t.from_account_id)} → ${accountName(t.to_account_id)}`;
+  $("transferEditAmount").value = t.amount;
+  $("transferEditDate").value = t.date;
+  $("transferEditOverlay").classList.add("open");
 }
 
-document.getElementById("transferEditClose").addEventListener("click", () => {
-  document.getElementById("transferEditOverlay").classList.remove("open");
+$("transferEditClose").addEventListener("click", () => {
+  $("transferEditOverlay").classList.remove("open");
 });
 
-document.getElementById("transferEditSave").addEventListener("click", async () => {
+$("transferEditSave").addEventListener("click", async () => {
   const t = activeTransferEntry;
   if (!t) return;
-  const newAmount = parseFloat(document.getElementById("transferEditAmount").value);
-  const newDate = document.getElementById("transferEditDate").value;
+  const newAmount = parseFloat($("transferEditAmount").value);
+  const newDate = $("transferEditDate").value;
   if (!newAmount || newAmount <= 0 || !newDate) return;
 
   const diff = newAmount - Number(t.amount);
@@ -220,11 +275,11 @@ document.getElementById("transferEditSave").addEventListener("click", async () =
   if (to) await supabase.from("accounts").update({ balance: Number(to.balance) + diff }).eq("id", t.to_account_id);
   await supabase.from("transfers").update({ amount: newAmount, date: newDate }).eq("id", t.id);
 
-  document.getElementById("transferEditOverlay").classList.remove("open");
+  $("transferEditOverlay").classList.remove("open");
   await loadAll();
 });
 
-document.getElementById("transferEditDelete").addEventListener("click", async () => {
+$("transferEditDelete").addEventListener("click", async () => {
   const t = activeTransferEntry;
   if (!t) return;
   const ok = confirm("Delete this transfer? Both account balances will be reversed.");
@@ -236,19 +291,19 @@ document.getElementById("transferEditDelete").addEventListener("click", async ()
   if (to) await supabase.from("accounts").update({ balance: Number(to.balance) - Number(t.amount) }).eq("id", t.to_account_id);
   await supabase.from("transfers").delete().eq("id", t.id);
 
-  document.getElementById("transferEditOverlay").classList.remove("open");
+  $("transferEditOverlay").classList.remove("open");
   await loadAll();
 });
 
 // ---------- Swipe down to dismiss any open sheet ----------
-["editAccountOverlay", "transferOverlay", "transferEditOverlay"].forEach((id) => {
-  const overlay = document.getElementById(id);
+["accountFormOverlay", "transferOverlay", "transferEditOverlay"].forEach((id) => {
+  const overlay = $(id);
   attachSwipeToDismiss(overlay, overlay.querySelector(".sheet-handle"), () => overlay.classList.remove("open"));
 });
 
 loadAll().then(() => {
   const params = new URLSearchParams(window.location.search);
   if (params.get("action") === "transfer") {
-    document.getElementById("openTransfer").click();
+    $("openTransfer").click();
   }
 });
