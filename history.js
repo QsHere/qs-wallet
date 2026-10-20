@@ -1,4 +1,5 @@
 import { supabase, money, colorFor, attachSwipeToDismiss, enableTabSwipe } from "./db.js";
+import { attachNoteSuggest } from "./notes.js";
 
 let viewYear, viewMonth; // viewMonth is 0-indexed
 let monthTx = []; // all transactions (income+expense) in the viewed month
@@ -316,3 +317,6 @@ loadMonth();
   const overlay = document.getElementById(id);
   attachSwipeToDismiss(overlay, overlay.querySelector(".sheet-handle"), () => overlay.classList.remove("open"));
 });
+
+// Typing suggestions from your previous notes
+attachNoteSuggest(document.getElementById("detailEditNote"), "note");

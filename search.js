@@ -1,4 +1,5 @@
 import { supabase, money, colorFor, attachSwipeToDismiss } from "./db.js";
+import { attachNoteSuggest } from "./notes.js";
 
 const $ = (id) => document.getElementById(id);
 const PAGE = 100;
@@ -547,6 +548,9 @@ $("detailDelete").addEventListener("click", async () => {
 });
 
 attachSwipeToDismiss($("detailOverlay"), $("detailOverlay").querySelector(".sheet-handle"), () => $("detailOverlay").classList.remove("open"));
+
+attachNoteSuggest($("detailEditNote"), "note");
+attachNoteSuggest($("detailEditSource"), "source");
 
 // ---------- init ----------
 (async function init() {

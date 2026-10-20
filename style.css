@@ -1411,3 +1411,31 @@ a { -webkit-tap-highlight-color: transparent; }
 .acct-form-icon { display: flex; align-items: center; gap: 16px; margin-bottom: 4px; }
 .acct-preview .acct-icon { width: 64px; height: 64px; border-radius: 18px; font-size: 30px; }
 .acct-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ---------- Note suggestions (typing helper above note / source boxes) ---------- */
+.note-suggest-wrap { position: relative; }
+.note-suggest {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 20;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(60, 50, 40, 0.18), 0 0 0 1px var(--separator);
+}
+.note-suggest.below { bottom: auto; top: calc(100% + 6px); }
+.note-suggest li {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  color: var(--label);
+  cursor: pointer;
+}
+.note-suggest li:active { background: var(--bg-elevated-2); }
+.note-suggest li b { font-weight: 700; }

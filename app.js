@@ -1,4 +1,5 @@
 import { supabase, money, todayISO, yesterdayISO, defaultPeriod, colorFor, animateNumber, attachSwipeToDismiss, enableTabSwipe, accountIconHTML } from "./db.js";
+import { attachNoteSuggest, rememberNote } from "./notes.js";
 
 let accountsCache = [];
 let categoriesCache = [];
@@ -493,6 +494,9 @@ document.getElementById("detailSaveEdit").addEventListener("click", async () => 
     return;
   }
 
+  if (newNote) rememberNote(newNote, "note");
+  if (payload.source) rememberNote(payload.source, "source");
+
   // Balance effect: income adds, expense subtracts. Switching type undoes the old effect and applies the new one.
   const effect = (type, amt) => (type === "income" ? Number(amt) : -Number(amt));
   const balanceDelta = effect(newType, newAmount) - effect(t.type, t.amount);
@@ -662,6 +666,7 @@ document.getElementById("confirmSpend").addEventListener("click", async () => {
   const account = accountsCache.find((a) => a.id === accountId);
   await supabase.from("accounts").update({ balance: Number(account.balance) - amount }).eq("id", accountId);
 
+  if (note) rememberNote(note, "note");
   spendOverlay.classList.remove("open");
   document.getElementById("spendAmount").value = "";
   document.getElementById("spendNote").value = "";
@@ -700,6 +705,7 @@ document.getElementById("confirmIncome").addEventListener("click", async () => {
   const account = accountsCache.find((a) => a.id === accountId);
   await supabase.from("accounts").update({ balance: Number(account.balance) + amount }).eq("id", accountId);
 
+  if (source) rememberNote(source, "source");
   document.getElementById("incomeOverlay").classList.remove("open");
   document.getElementById("incomeAmount").value = "";
   document.getElementById("incomeSource").value = "";
@@ -735,3 +741,9 @@ document.getElementById("confirmIncome").addEventListener("click", async () => {
 
 // ---------- Swipe left on the dashboard to jump to History ----------
 enableTabSwipe({ next: "history.html" });
+
+// ---------- Typing suggestions from your previous notes ----------
+attachNoteSuggest(document.getElementById("spendNote"), "note");
+attachNoteSuggest(document.getElementById("incomeSource"), "source");
+attachNoteSuggest(document.getElementById("detailEditNote"), "note");
+attachNoteSuggest(document.getElementById("detailEditSource"), "source");

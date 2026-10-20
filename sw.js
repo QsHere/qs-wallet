@@ -1,4 +1,4 @@
-const CACHE_NAME = "qs-wallet-v22";
+const CACHE_NAME = "qs-wallet-v23";
 const SHELL_FILES = [
   "./",
   "./index.html",
@@ -20,6 +20,7 @@ const SHELL_FILES = [
   "./history.js",
   "./debts.js",
   "./search.js",
+  "./notes.js",
   "./db.js",
   "./config.js",
   "./manifest.json",
