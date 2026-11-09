@@ -1,5 +1,6 @@
 import { supabase, money, todayISO, yesterdayISO, defaultPeriod, colorFor, animateNumber, attachSwipeToDismiss, enableTabSwipe, accountIconHTML } from "./db.js";
 import { attachNoteSuggest, rememberNote } from "./notes.js";
+import { initTxEditor } from "./txedit.js";
 
 let accountsCache = [];
 let categoriesCache = [];
@@ -38,13 +39,11 @@ async function loadDebtsSummary() {
 
   const owedEl = document.getElementById("owedToYouChip");
   const oweEl = document.getElementById("youOweChip");
-  const container = document.querySelector(".debts-split");
 
-  if (owedToYou === 0 && youOwe === 0) {
-    container.style.display = "none";
-    return;
-  }
-  container.style.display = "flex";
+  const hasDebts = owedToYou !== 0 || youOwe !== 0;
+  document.getElementById("debtsToggleRow").style.display = hasDebts ? "" : "none";
+  document.getElementById("debtsCollapse").style.display = hasDebts ? "" : "none";
+  if (!hasDebts) return;
   owedEl.innerHTML = `<span>Owed to you</span><span class="debts-chip-amt">${money(owedToYou)}</span>`;
   oweEl.innerHTML = `<span>You owe</span><span class="debts-chip-amt">${money(youOwe)}</span>`;
 }
@@ -98,9 +97,12 @@ document.getElementById("toggleVisibility").addEventListener("click", () => {
   renderHero();
 });
 
-document.getElementById("toggleAccounts").addEventListener("click", () => {
-  document.getElementById("toggleAccounts").classList.toggle("expanded");
-  document.getElementById("accountsCollapse").classList.toggle("expanded");
+// Accounts and Debts are separate sections, each opened and closed on its own
+[["toggleAccounts", "accountsCollapse"], ["toggleDebts", "debtsCollapse"]].forEach(([toggleId, contentId]) => {
+  document.getElementById(toggleId).addEventListener("click", () => {
+    document.getElementById(toggleId).classList.toggle("expanded");
+    document.getElementById(contentId).classList.toggle("expanded");
+  });
 });
 
 function renderAccountPills(containerId, state) {
@@ -308,14 +310,9 @@ function openCardDetail(c) {
     noteRow.classList.add("hidden");
   }
 
-  document.getElementById("detailEditRow").classList.add("hidden");
-  document.getElementById("detailEditDateWrap").classList.add("hidden");
-  document.getElementById("detailEditNoteWrap").classList.add("hidden");
-  document.getElementById("detailSaveEdit").classList.add("hidden");
+  editor.reset();
   document.getElementById("detailEditToggle").classList.add("hidden");
-  document.getElementById("detailDelete").classList.add("hidden");
   document.getElementById("detailManageCardLink").classList.remove("hidden");
-  hideDetailEditExtras();
 
   document.getElementById("detailOverlay").classList.add("open");
 }
@@ -351,16 +348,7 @@ function openDetail(id) {
     noteRow.classList.add("hidden");
   }
 
-  document.getElementById("detailEditRow").classList.add("hidden");
-  document.getElementById("detailEditDateWrap").classList.add("hidden");
-  document.getElementById("detailEditNoteWrap").classList.add("hidden");
-  document.getElementById("detailSaveEdit").classList.add("hidden");
-  document.getElementById("detailEditToggle").classList.remove("hidden");
-  document.getElementById("detailDelete").classList.add("hidden"); // only shown once in Edit mode — see detailEditToggle
-  document.getElementById("detailDelete").disabled = false;
-  document.getElementById("detailSaveEdit").disabled = false;
-  hideDetailEditExtras();
-  document.getElementById("detailManageCardLink").classList.add("hidden");
+  editor.reset();
   document.getElementById("detailEditAmount").value = t.amount;
   document.getElementById("detailEditDate").value = t.date;
   document.getElementById("detailEditNote").value = t.note || "";
@@ -372,169 +360,15 @@ document.getElementById("detailClose").addEventListener("click", () => {
   document.getElementById("detailOverlay").classList.remove("open");
 });
 
-// ---------- Edit mode: type / category / source ----------
-let detailEditState = { type: "expense", categoryId: null, locked: true };
-
-function categoryPathLabel(c) {
-  const parts = [c.name];
-  let cur = c;
-  let guard = 0;
-  while (cur && cur.parent_id && guard++ < 8) {
-    cur = categoriesCache.find((x) => x.id === cur.parent_id);
-    if (cur) parts.unshift(cur.name);
-  }
-  return parts.join(" › ");
-}
-
-function hideDetailEditExtras() {
-  ["detailEditTypeWrap", "detailTypeLockedHint", "detailEditCategoryWrap", "detailEditSourceWrap"]
-    .forEach((id) => document.getElementById(id).classList.add("hidden"));
-}
-
-function renderDetailEditFields() {
-  const s = detailEditState;
-  document.getElementById("detailEditTypeWrap").classList.toggle("hidden", s.locked);
-  document.getElementById("detailTypeLockedHint").classList.toggle("hidden", !s.locked);
-  document.getElementById("detailTypeExpense").classList.toggle("selected", s.type === "expense");
-  document.getElementById("detailTypeIncome").classList.toggle("selected", s.type === "income");
-  document.getElementById("detailEditCategoryWrap").classList.toggle("hidden", s.locked || s.type !== "expense");
-  document.getElementById("detailEditSourceWrap").classList.toggle("hidden", s.locked || s.type !== "income");
-
-  document.getElementById("detailEditCategoryPills").innerHTML = categoriesCache
-    .filter((c) => !c.is_system)
-    .map((c) => ({ c, label: categoryPathLabel(c) }))
-    .sort((a, b) => a.label.localeCompare(b.label))
-    .map(({ c, label }) => `<button type="button" class="pill ${c.id === s.categoryId ? "selected" : ""}" data-cat-id="${c.id}">${c.icon || "🏷️"} ${label}</button>`)
-    .join("");
-}
-
-// Debt repayments, debt-created entries and card top-ups are tied to other records,
-// so flipping their type here would leave those records out of sync.
-async function isLinkedTransaction(id) {
-  const [d, c] = await Promise.all([
-    supabase.from("debt_activity").select("id").eq("transaction_id", id).limit(1),
-    supabase.from("card_activity").select("id").eq("transaction_id", id).limit(1),
-  ]);
-  if (d.error || c.error) return true; // can't verify — stay on the safe side
-  return (d.data || []).length > 0 || (c.data || []).length > 0;
-}
-
-document.getElementById("detailEditToggle").addEventListener("click", async () => {
-  const t = recentCache.find((x) => x.id === activeDetailId);
-  if (!t) return;
-
-  document.getElementById("detailEditRow").classList.remove("hidden");
-  document.getElementById("detailEditDateWrap").classList.remove("hidden");
-  document.getElementById("detailEditNoteWrap").classList.remove("hidden");
-  document.getElementById("detailSaveEdit").classList.remove("hidden");
-  document.getElementById("detailEditToggle").classList.add("hidden");
-  document.getElementById("detailDelete").classList.remove("hidden");
-
-  // Start locked until we've confirmed nothing else depends on this transaction
-  detailEditState = { type: t.type, categoryId: t.type === "expense" ? t.category_id : null, locked: true };
-  document.getElementById("detailEditSource").value = t.source || "";
-  renderDetailEditFields();
-
-  const linked = await isLinkedTransaction(t.id);
-  if (activeDetailId !== t.id) return; // sheet was closed/changed meanwhile
-  detailEditState.locked = linked;
-  renderDetailEditFields();
-});
-
-document.getElementById("detailEditTypeWrap").addEventListener("click", (e) => {
-  const pill = e.target.closest("[data-edit-type]");
-  if (!pill || detailEditState.locked) return;
-  detailEditState.type = pill.dataset.editType;
-  renderDetailEditFields();
-});
-
-document.getElementById("detailEditCategoryPills").addEventListener("click", (e) => {
-  const pill = e.target.closest("[data-cat-id]");
-  if (!pill || detailEditState.locked) return;
-  detailEditState.categoryId = pill.dataset.catId;
-  renderDetailEditFields();
-});
-
-document.getElementById("detailSaveEdit").addEventListener("click", async () => {
-  const saveBtn = document.getElementById("detailSaveEdit");
-  if (saveBtn.disabled) return;
-  const t = recentCache.find((x) => x.id === activeDetailId);
-  if (!t) return;
-  const newAmount = parseFloat(document.getElementById("detailEditAmount").value);
-  const newDate = document.getElementById("detailEditDate").value;
-  const newNote = document.getElementById("detailEditNote").value.trim() || null;
-  if (!newAmount || newAmount <= 0 || !newDate) return;
-
-  const s = detailEditState;
-  const newType = s.locked ? t.type : s.type;
-  if (!s.locked && newType === "expense" && t.type === "income" && !s.categoryId) {
-    alert("Pick a category for this expense.");
-    return;
-  }
-
-  saveBtn.disabled = true;
-
-  const payload = { amount: newAmount, date: newDate, note: newNote };
-  if (!s.locked) {
-    payload.type = newType;
-    if (newType === "expense") {
-      payload.category_id = s.categoryId;
-      if (t.type === "income") payload.source = null;
-    } else {
-      payload.source = document.getElementById("detailEditSource").value.trim() || null;
-      if (t.type === "expense") payload.category_id = null;
-    }
-  }
-
-  const { error } = await supabase.from("transactions").update(payload).eq("id", t.id);
-  if (error) {
-    console.error(error);
-    alert(`Couldn't save changes: ${error.message}`);
-    saveBtn.disabled = false;
-    return;
-  }
-
-  if (newNote) rememberNote(newNote, "note");
-  if (payload.source) rememberNote(payload.source, "source");
-
-  // Balance effect: income adds, expense subtracts. Switching type undoes the old effect and applies the new one.
-  const effect = (type, amt) => (type === "income" ? Number(amt) : -Number(amt));
-  const balanceDelta = effect(newType, newAmount) - effect(t.type, t.amount);
-  if (t.account_id && Math.abs(balanceDelta) > 0.0001) {
-    const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
-    if (account) {
-      const newBalance = Math.round((Number(account.balance) + balanceDelta) * 100) / 100;
-      await supabase.from("accounts").update({ balance: newBalance }).eq("id", t.account_id);
-    }
-  }
-
-  document.getElementById("detailOverlay").classList.remove("open");
-  await loadDashboard();
-});
-
-document.getElementById("detailDelete").addEventListener("click", async () => {
-  const deleteBtn = document.getElementById("detailDelete");
-  if (deleteBtn.disabled) return; // already processing — ignore a second tap
-  const ok = confirm("Delete this transaction? This will also reverse its effect on the account balance.");
-  if (!ok) return;
-
-  deleteBtn.disabled = true; // lock immediately so a fast second tap can't double-reverse the balance
-
-  const t = recentCache.find((x) => x.id === activeDetailId);
-  if (!t) { deleteBtn.disabled = false; return; }
-
-  if (t.account_id) {
-    const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
-    if (account) {
-      const revert = t.type === "expense" ? Number(t.amount) : -Number(t.amount);
-      await supabase.from("accounts").update({ balance: Number(account.balance) + revert }).eq("id", t.account_id);
-    }
-  }
-  await supabase.from("transactions").delete().eq("id", activeDetailId);
-
-  activeDetailId = null;
-  document.getElementById("detailOverlay").classList.remove("open");
-  await loadDashboard();
+// ---------- Edit mode (type, account, category, date, note, save, delete) — shared with Search ----------
+const editor = initTxEditor({
+  getTx: () => recentCache.find((x) => x.id === activeDetailId) || null,
+  getCategories: () => categoriesCache,
+  getAccounts: () => accountsCache,
+  onChanged: async () => {
+    activeDetailId = null;
+    await loadDashboard();
+  },
 });
 
 // ---------- SPEND FLOW ----------

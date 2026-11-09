@@ -32,7 +32,7 @@
 
     <div class="toggle-row">
       <button class="collapse-toggle" id="toggleAccounts">
-        <span>Accounts &amp; Debts</span>
+        <span>Accounts</span>
         <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <a href="accounts.html?action=transfer" class="icon-btn" title="Transfer funds" style="text-decoration:none;">
@@ -45,6 +45,17 @@
     <div class="collapse-content" id="accountsCollapse">
       <div>
         <div class="wallet-grid" id="balances"></div>
+      </div>
+    </div>
+
+    <div class="toggle-row" id="debtsToggleRow">
+      <button class="collapse-toggle" id="toggleDebts">
+        <span>Debts</span>
+        <svg class="collapse-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+    <div class="collapse-content" id="debtsCollapse">
+      <div>
         <div class="debts-split">
           <a href="debts.html" class="debts-chip owed" id="owedToYouChip"></a>
           <a href="debts.html" class="debts-chip owe" id="youOweChip"></a>
@@ -211,28 +222,34 @@
           <span class="amount-currency">RM</span>
           <input type="number" inputmode="decimal" class="amount-input" id="detailEditAmount" />
         </div>
-        <div class="hidden" id="detailEditTypeWrap">
-          <label class="field-label">Type</label>
+
+        <div class="hidden edit-field" id="detailEditTypeWrap">
           <div class="pill-row">
             <button type="button" class="pill selected" id="detailTypeExpense" data-edit-type="expense" style="flex:1; justify-content:center;">Expense</button>
             <button type="button" class="pill" id="detailTypeIncome" data-edit-type="income" style="flex:1; justify-content:center;">Income</button>
           </div>
         </div>
-        <p class="hero-caption hidden" id="detailTypeLockedHint" style="text-align:left; margin:12px 4px 0;">This transaction is linked to a debt or card, so its type and category can't be changed here.</p>
-        <div class="hidden" id="detailEditCategoryWrap">
-          <label class="field-label">Category</label>
-          <div class="pill-row" id="detailEditCategoryPills" style="max-height:150px; overflow-y:auto;"></div>
+        <p class="hero-caption hidden" id="detailTypeLockedHint" style="text-align:left; margin:12px 4px 0;">This transaction is linked to a debt or card, so its type, category and account can't be changed here.</p>
+
+        <div class="hidden edit-field" id="detailEditAccountWrap">
+          <label class="field-label tight" id="detailEditAccountLabel">Paid from</label>
+          <div class="pill-row" id="detailEditAccountPills"></div>
         </div>
-        <div class="hidden" id="detailEditSourceWrap">
-          <label class="field-label">Source (optional)</label>
-          <input type="text" class="text-input" id="detailEditSource" placeholder="e.g. Salary, Father's business" />
+        <div class="hidden edit-field" id="detailEditCategoryWrap">
+          <button type="button" class="pick-row" id="detailEditCategoryBtn">
+            <span class="pick-label">Category</span>
+            <span class="pick-value" id="detailEditCategoryText">Choose…</span>
+            <span class="pick-chevron">›</span>
+          </button>
         </div>
-        <div class="hidden" id="detailEditDateWrap">
-          <label class="field-label">Date</label>
+        <div class="hidden edit-field" id="detailEditSourceWrap">
+          <input type="text" class="text-input" id="detailEditSource" placeholder="Source (optional)" />
+        </div>
+        <div class="hidden form-row" id="detailEditDateWrap">
+          <span class="form-label">Date</span>
           <input type="date" class="date-input" id="detailEditDate" />
         </div>
-        <div class="hidden" id="detailEditNoteWrap">
-          <label class="field-label">Note</label>
+        <div class="hidden edit-field" id="detailEditNoteWrap">
           <input type="text" class="text-input" id="detailEditNote" placeholder="Add a note" />
         </div>
 
@@ -240,6 +257,21 @@
         <button class="btn-secondary" id="detailEditToggle" style="color:var(--blue); background:var(--bg-elevated-2);">Edit details</button>
         <button class="btn-secondary" id="detailDelete">Delete this transaction</button>
         <a href="cards.html" class="btn-secondary hidden" id="detailManageCardLink" style="display:block; text-align:center; text-decoration:none; color:var(--blue); background:var(--bg-elevated-2); box-sizing:border-box;">Manage on Cards page</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- CATEGORY PICKER (opened from the edit form) -->
+  <div class="sheet-overlay" id="categoryPickerOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span>Category</span>
+        <button class="sheet-close" id="categoryPickerClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <ul class="grouped-list" id="categoryPickerList"></ul>
       </div>
     </div>
   </div>

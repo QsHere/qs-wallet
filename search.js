@@ -1,5 +1,6 @@
 import { supabase, money, colorFor, attachSwipeToDismiss } from "./db.js";
 import { attachNoteSuggest } from "./notes.js";
+import { initTxEditor } from "./txedit.js";
 
 const $ = (id) => document.getElementById(id);
 const PAGE = 100;
@@ -37,6 +38,7 @@ function highlight(text, words) {
 
 // ---------- data ----------
 let categories = [];
+let accounts = [];
 let catById = new Map();
 let allItems = [];
 let itemByKey = new Map();
@@ -117,11 +119,13 @@ function buildCardItem(c) {
 async function loadData() {
   $("loadingNote").classList.remove("hidden");
   try {
-    const [txRows, cardRows, catRes] = await Promise.all([
+    const [txRows, cardRows, catRes, accRes] = await Promise.all([
       fetchAll("transactions", "id, date, time_period, type, amount, source, note, account_id, category_id, created_at, accounts(name), categories(name, icon)"),
       fetchAll("card_activity", "id, date, amount, type, detail, created_at, cards(name)", (q) => q.eq("type", "spend")).catch(() => []),
       supabase.from("categories").select("*"),
+      supabase.from("accounts").select("*").order("name"),
     ]);
+    accounts = accRes.data || [];
     categories = catRes.data || [];
     catById = new Map(categories.map((c) => [c.id, c]));
     allItems = [...txRows.map(buildTxItem), ...cardRows.map(buildCardItem)];
@@ -330,7 +334,6 @@ $("backLink").addEventListener("click", (e) => {
 
 // ---------- detail sheet ----------
 let activeItem = null;
-let editState = { type: "expense", categoryId: null, locked: true };
 
 $("resultsList").addEventListener("click", (e) => {
   const row = e.target.closest("[data-key]");
@@ -341,18 +344,8 @@ $("resultsList").addEventListener("click", (e) => {
   if (item.kind === "card") openCardDetail(item); else openTxDetail(item);
 });
 
-function hideEditExtras() {
-  ["detailEditTypeWrap", "detailTypeLockedHint", "detailEditCategoryWrap", "detailEditSourceWrap"]
-    .forEach((id) => $(id).classList.add("hidden"));
-}
-
 function resetSheetControls() {
-  ["detailEditRow", "detailEditDateWrap", "detailEditNoteWrap", "detailSaveEdit", "detailDelete", "detailManageCardLink"]
-    .forEach((id) => $(id).classList.add("hidden"));
-  $("detailEditToggle").classList.remove("hidden");
-  $("detailDelete").disabled = false;
-  $("detailSaveEdit").disabled = false;
-  hideEditExtras();
+  editor.reset();
 }
 
 function openTxDetail(item) {
@@ -412,139 +405,16 @@ function openCardDetail(item) {
 
 $("detailClose").addEventListener("click", () => $("detailOverlay").classList.remove("open"));
 
-function renderEditFields() {
-  const s = editState;
-  $("detailEditTypeWrap").classList.toggle("hidden", s.locked);
-  $("detailTypeLockedHint").classList.toggle("hidden", !s.locked);
-  $("detailTypeExpense").classList.toggle("selected", s.type === "expense");
-  $("detailTypeIncome").classList.toggle("selected", s.type === "income");
-  $("detailEditCategoryWrap").classList.toggle("hidden", s.locked || s.type !== "expense");
-  $("detailEditSourceWrap").classList.toggle("hidden", s.locked || s.type !== "income");
-
-  $("detailEditCategoryPills").innerHTML = categories
-    .filter((c) => !c.is_system)
-    .map((c) => ({ c, label: pathLabel(c) }))
-    .sort((a, b) => a.label.localeCompare(b.label))
-    .map(({ c, label }) => `<button type="button" class="pill ${c.id === s.categoryId ? "selected" : ""}" data-cat-id="${c.id}">${esc(c.icon || "🏷️")} ${esc(label)}</button>`)
-    .join("");
-}
-
-// Debt repayments, debt-created entries and card top-ups are tied to other records.
-async function isLinkedTransaction(id) {
-  const [d, c] = await Promise.all([
-    supabase.from("debt_activity").select("id").eq("transaction_id", id).limit(1),
-    supabase.from("card_activity").select("id").eq("transaction_id", id).limit(1),
-  ]);
-  if (d.error || c.error) return true;
-  return (d.data || []).length > 0 || (c.data || []).length > 0;
-}
-
-$("detailEditToggle").addEventListener("click", async () => {
-  const item = activeItem;
-  if (!item || item.kind !== "tx") return;
-  const t = item.raw;
-
-  ["detailEditRow", "detailEditDateWrap", "detailEditNoteWrap", "detailSaveEdit", "detailDelete"]
-    .forEach((id) => $(id).classList.remove("hidden"));
-  $("detailEditToggle").classList.add("hidden");
-
-  editState = { type: t.type, categoryId: t.type === "expense" ? t.category_id : null, locked: true };
-  renderEditFields();
-
-  const linked = await isLinkedTransaction(t.id);
-  if (activeItem !== item) return;
-  editState.locked = linked;
-  renderEditFields();
-});
-
-$("detailEditTypeWrap").addEventListener("click", (e) => {
-  const pill = e.target.closest("[data-edit-type]");
-  if (!pill || editState.locked) return;
-  editState.type = pill.dataset.editType;
-  renderEditFields();
-});
-
-$("detailEditCategoryPills").addEventListener("click", (e) => {
-  const pill = e.target.closest("[data-cat-id]");
-  if (!pill || editState.locked) return;
-  editState.categoryId = pill.dataset.catId;
-  renderEditFields();
-});
-
-$("detailSaveEdit").addEventListener("click", async () => {
-  const saveBtn = $("detailSaveEdit");
-  if (saveBtn.disabled || !activeItem || activeItem.kind !== "tx") return;
-  const t = activeItem.raw;
-  const newAmount = parseFloat($("detailEditAmount").value);
-  const newDate = $("detailEditDate").value;
-  const newNote = $("detailEditNote").value.trim() || null;
-  if (!newAmount || newAmount <= 0 || !newDate) return;
-
-  const s = editState;
-  const newType = s.locked ? t.type : s.type;
-  if (!s.locked && newType === "expense" && t.type === "income" && !s.categoryId) {
-    alert("Pick a category for this expense.");
-    return;
-  }
-
-  saveBtn.disabled = true;
-
-  const payload = { amount: newAmount, date: newDate, note: newNote };
-  if (!s.locked) {
-    payload.type = newType;
-    if (newType === "expense") {
-      payload.category_id = s.categoryId;
-      if (t.type === "income") payload.source = null;
-    } else {
-      payload.source = $("detailEditSource").value.trim() || null;
-      if (t.type === "expense") payload.category_id = null;
-    }
-  }
-
-  const { error } = await supabase.from("transactions").update(payload).eq("id", t.id);
-  if (error) {
-    console.error(error);
-    alert(`Couldn't save changes: ${error.message}`);
-    saveBtn.disabled = false;
-    return;
-  }
-
-  const effect = (type, amt) => (type === "income" ? Number(amt) : -Number(amt));
-  const balanceDelta = effect(newType, newAmount) - effect(t.type, t.amount);
-  if (t.account_id && Math.abs(balanceDelta) > 0.0001) {
-    const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
-    if (account) {
-      const newBalance = Math.round((Number(account.balance) + balanceDelta) * 100) / 100;
-      await supabase.from("accounts").update({ balance: newBalance }).eq("id", t.account_id);
-    }
-  }
-
-  $("detailOverlay").classList.remove("open");
-  activeItem = null;
-  await loadData();
-  render();
-});
-
-$("detailDelete").addEventListener("click", async () => {
-  const deleteBtn = $("detailDelete");
-  if (deleteBtn.disabled || !activeItem || activeItem.kind !== "tx") return;
-  if (!confirm("Delete this transaction? This will also reverse its effect on the account balance.")) return;
-  deleteBtn.disabled = true;
-
-  const t = activeItem.raw;
-  if (t.account_id) {
-    const { data: account } = await supabase.from("accounts").select("*").eq("id", t.account_id).single();
-    if (account) {
-      const revert = t.type === "expense" ? Number(t.amount) : -Number(t.amount);
-      await supabase.from("accounts").update({ balance: Math.round((Number(account.balance) + revert) * 100) / 100 }).eq("id", t.account_id);
-    }
-  }
-  await supabase.from("transactions").delete().eq("id", t.id);
-
-  $("detailOverlay").classList.remove("open");
-  activeItem = null;
-  await loadData();
-  render();
+// Edit mode (type, account, category, date, note, save, delete) — shared with Home
+const editor = initTxEditor({
+  getTx: () => (activeItem && activeItem.kind === "tx" ? activeItem.raw : null),
+  getCategories: () => categories,
+  getAccounts: () => accounts,
+  onChanged: async () => {
+    activeItem = null;
+    await loadData();
+    render();
+  },
 });
 
 attachSwipeToDismiss($("detailOverlay"), $("detailOverlay").querySelector(".sheet-handle"), () => $("detailOverlay").classList.remove("open"));
