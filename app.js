@@ -28,24 +28,6 @@ async function loadDashboard() {
   });
   await loadBalances();
   await loadRecent();
-  await loadDebtsSummary();
-}
-
-async function loadDebtsSummary() {
-  const { data, error } = await supabase.from("debts").select("direction, balance");
-  if (error) { console.error(error); return; }
-  const owedToYou = data.filter((d) => d.direction === "owed_to_me").reduce((s, d) => s + Number(d.balance), 0);
-  const youOwe = data.filter((d) => d.direction === "i_owe").reduce((s, d) => s + Number(d.balance), 0);
-
-  const owedEl = document.getElementById("owedToYouChip");
-  const oweEl = document.getElementById("youOweChip");
-
-  const hasDebts = owedToYou !== 0 || youOwe !== 0;
-  document.getElementById("debtsToggleRow").style.display = hasDebts ? "" : "none";
-  document.getElementById("debtsCollapse").style.display = hasDebts ? "" : "none";
-  if (!hasDebts) return;
-  owedEl.innerHTML = `<span>Owed to you</span><span class="debts-chip-amt">${money(owedToYou)}</span>`;
-  oweEl.innerHTML = `<span>You owe</span><span class="debts-chip-amt">${money(youOwe)}</span>`;
 }
 
 async function loadBalances() {
@@ -97,12 +79,9 @@ document.getElementById("toggleVisibility").addEventListener("click", () => {
   renderHero();
 });
 
-// Accounts and Debts are separate sections, each opened and closed on its own
-[["toggleAccounts", "accountsCollapse"], ["toggleDebts", "debtsCollapse"]].forEach(([toggleId, contentId]) => {
-  document.getElementById(toggleId).addEventListener("click", () => {
-    document.getElementById(toggleId).classList.toggle("expanded");
-    document.getElementById(contentId).classList.toggle("expanded");
-  });
+document.getElementById("toggleAccounts").addEventListener("click", () => {
+  document.getElementById("toggleAccounts").classList.toggle("expanded");
+  document.getElementById("accountsCollapse").classList.toggle("expanded");
 });
 
 function renderAccountPills(containerId, state) {
