@@ -8,6 +8,28 @@
 <link rel="icon" href="icon-192.png" />
 <link rel="stylesheet" href="style.css" />
 <title>QS Wallet · Categories</title>
+<style>
+  .cat-sticky { position: sticky; top: 0; z-index: 3; background: var(--bg); margin: 0 -20px 8px; padding: 8px 20px 6px; }
+  .cat-toolbar { display: flex; gap: 8px; }
+  .cat-toolbar .text-input { flex: 1; min-width: 0; }
+  .cat-new { flex: none; border: none; border-radius: 12px; background: var(--green); color: var(--label); font-size: 14px; font-weight: 600; padding: 0 14px; cursor: pointer; }
+  .cat-list { background: var(--bg-elevated); border-radius: 18px; overflow: hidden; }
+  .cat-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 8px; border-top: 1px solid var(--separator); cursor: pointer; }
+  .cat-row:first-child { border-top: none; }
+  .cat-row:active { background: var(--bg-elevated-2); }
+  .cat-chev { flex: none; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: none; background: none; color: var(--label-tertiary); font-size: 20px; line-height: 1; cursor: pointer; transition: transform 0.2s ease; }
+  .cat-chev.open { transform: rotate(90deg); }
+  .cat-chev.none { visibility: hidden; }
+  .cat-text { flex: 1; min-width: 0; }
+  .cat-name { display: block; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cat-path { display: block; font-size: 12px; color: var(--label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+  .cat-count { flex: none; font-size: 12px; color: var(--label-secondary); background: var(--bg-elevated-2); border-radius: 999px; padding: 2px 8px; }
+  .cat-act { display: flex; align-items: center; gap: 12px; width: 100%; padding: 15px 6px; background: none; border: none; border-top: 1px solid var(--separator); color: var(--label); font-size: 16px; text-align: left; cursor: pointer; }
+  .cat-act.danger { color: var(--red); }
+  .cat-pick { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin: 0; padding: 13px 14px; background: var(--bg-elevated-2); border: none; border-radius: 12px; font-size: 15px; color: var(--label); text-align: left; cursor: pointer; }
+  .cat-form-row { display: flex; gap: 8px; }
+  .icon-box { width: 56px; flex: none; text-align: center; font-size: 20px; padding-left: 0; padding-right: 0; }
+</style>
 </head>
 <body>
 
@@ -15,14 +37,72 @@
     <a href="settings.html" class="nav-back-inline">‹ Settings</a>
     <h1 class="page-heading">Categories</h1>
 
-    <div class="add-row">
-      <input type="text" id="newTopIcon" class="text-input icon-input" placeholder="🏷️" maxlength="4" />
-      <input type="text" id="newTopCategory" placeholder="New top-level category" class="text-input" />
-      <button class="small-btn btn-confirm" id="addTopCategory">Add</button>
+    <div class="cat-sticky">
+      <div class="cat-toolbar">
+        <input type="text" id="catSearch" class="text-input" placeholder="Search categories…" autocomplete="off" />
+        <button type="button" class="cat-new" id="openNewCategory">+ New</button>
+      </div>
     </div>
 
-    <ul class="category-tree" id="categoryTree"></ul>
+    <div id="categoryTree"></div>
   </main>
+
+  <!-- ACTIONS FOR ONE CATEGORY -->
+  <div class="sheet-overlay" id="catActionOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="catActionTitle">Category</span>
+        <button class="sheet-close" id="catActionClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <p class="hero-caption" id="catActionPath" style="text-align:left; margin:0 4px 8px;"></p>
+        <button class="cat-act" id="actAddSub">＋ Add subcategory</button>
+        <button class="cat-act" id="actEdit">✏️ Edit name &amp; icon</button>
+        <button class="cat-act danger" id="actDelete">🗑 Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD / EDIT FORM -->
+  <div class="sheet-overlay" id="catFormOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span id="catFormTitle">New category</span>
+        <button class="sheet-close" id="catFormClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <div class="cat-form-row">
+          <input type="text" id="catFormIcon" class="text-input icon-box" placeholder="🏷️" maxlength="4" />
+          <input type="text" id="catFormName" class="text-input" placeholder="Category name" />
+        </div>
+        <div id="catParentWrap">
+          <label class="field-label">Add under</label>
+          <button type="button" class="cat-pick" id="catParentBtn"><span id="catParentText">Top level</span><span style="color:var(--label-tertiary)">›</span></button>
+        </div>
+        <button class="btn-confirm" id="catFormSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARENT PICKER (searchable) -->
+  <div class="sheet-overlay" id="parentPickerOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span></span>
+        <span>Add under…</span>
+        <button class="sheet-close" id="parentPickerClose">Close</button>
+      </div>
+      <div class="sheet-body">
+        <input type="text" id="parentSearch" class="text-input" placeholder="Search…" autocomplete="off" style="margin-bottom:10px;" />
+        <div id="parentList"></div>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="categories.js"></script>
 
